@@ -1,0 +1,9 @@
+.local/
+runtime/
+dist/
+**/bin/
+**/obj/
+**/libraries/
+*.dll
+*.exe
+*.log
