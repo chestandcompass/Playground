@@ -24,6 +24,9 @@ All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows 
 - Synchronize validated hair colors, retaining original hair as the default and isolating materials from skin and other players.
 - Validation: 90 automated assertions and 40 in-game cosmetic checks passed in one instance. Menu typing and color previews were inspected; two-PC delivery remains unverified.
 
+<details>
+<summary>Older releases</summary>
+
 ## Preview 15
 
 - Synchronize each player's native Vacpack style independently, including late-created models.
@@ -101,3 +104,5 @@ All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows 
 
 - Introduce native host/join menus, separate multiplayer saves, local guest profiles, an installer, and public update delivery.
 - Check host creation, saving/loading, save isolation, and initial file/UDP behavior. Internet NAT traversal was not supported.
+
+</details>
