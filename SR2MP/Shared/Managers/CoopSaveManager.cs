@@ -90,6 +90,24 @@ internal static class CoopSaveManager
 
     internal static void MarkSessionStarted() => sessionActive = Enabled;
 
+    internal static void DeleteHostWorld(string gameName)
+    {
+        if (Role != "host" || GameHelpers.inGame || Main.Server.IsRunning || Main.Client.IsConnected || localAccount == null)
+            throw new InvalidOperationException("Worlds can only be removed from the host world menu.");
+        var expected = Path.GetFullPath(Path.Combine(Root, "host", Profile, localAccount, "Saves"));
+        if (!string.Equals(Path.GetFullPath(Storage.savePath).TrimEnd(Path.DirectorySeparatorChar), expected, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Refusing to delete outside multiplayer host storage.");
+        if (string.IsNullOrWhiteSpace(gameName)) throw new ArgumentException(nameof(gameName));
+        var director = GameContext.Instance.AutoSaveDirector;
+        var exists = false;
+        foreach (var group in director.AvailableGamesByGameName())
+            if (group.Key == gameName) { exists = true; break; }
+        if (!exists) throw new InvalidOperationException("The multiplayer world no longer exists.");
+        // Let the game remove every autosave belonging to this world, including its
+        // native backups. Never enumerate/delete files by a display-name prefix.
+        director.DeleteGame(gameName);
+    }
+
     internal static bool ImportSingleplayer(Summary save)
     {
         SelectRole("singleplayer");

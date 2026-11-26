@@ -199,16 +199,29 @@ internal static class NativeMenu
             for (var i = 1; i < group.Value.Count; i++)
                 if (group.Value[i].SaveNumber > save.SaveNumber) save = group.Value[i];
             if (save.IsInvalid) continue;
-            options.Add((save.DisplayName, () =>
-            {
-                pendingHost = true;
-                GameContext.Instance.AutoSaveDirector.BeginLoad(save.SaveIdentifier, null);
-            }));
+            options.Add((save.DisplayName, () => ShowWorldActions(save)));
         }
         if (options.Count == 0) options.Add((L("Utwórz pierwszy świat", "Create your first world"), CreateHost));
         options.Add((L("Wróć", "Back"), ShowHome));
         Page(options.ToArray());
     }
+
+    private static void ShowWorldActions(Il2CppMonomiPark.SlimeRancher.Persist.Summary save) => Page(
+        (L("Graj: ", "Play: ") + save.DisplayName, () =>
+        {
+            pendingHost = true;
+            GameContext.Instance.AutoSaveDirector.BeginLoad(save.SaveIdentifier, null);
+        }),
+        (L("Usuń świat multiplayer", "Delete multiplayer world"), () => Page(
+            // Cancel gets initial keyboard/controller focus. Removing a world always
+            // requires a separate submit on the button carrying its actual name.
+            (L("Anuluj", "Cancel"), () => ShowWorldActions(save)),
+            (L("Tak, usuń: ", "Yes, delete: ") + save.DisplayName, () =>
+            {
+                CoopSaveManager.DeleteHostWorld(save.SaveIdentifier.GameName);
+                ShowWorlds();
+            }))),
+        (L("Wróć", "Back"), ShowWorlds));
 
     private static void ShowJoin() => Page(
         (L("Wklej kod i dołącz", "Paste code and join"), JoinCopiedCode),

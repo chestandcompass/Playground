@@ -44,3 +44,7 @@ Aby odinstalowac, otworz instalator ponownie i wybierz **Odinstaluj**, albo wybi
 ## Kopia swiata singleplayer
 W menu Playground wybierz **Skopiuj swiat singleplayer / Copy a singleplayer world**, wybierz swiat i potwierdz kopiowanie. Najnowszy poprawny zapis trafi do **Moje swiaty / My worlds**. Oryginal pozostaje bez zmian; oba swiaty rozwijaja sie niezaleznie. Ponowny import tego samego swiata jest blokowany, aby chronic postepy multiplayer. Kopiowanie plikow sprawdzono automatycznie; caly przebieg importu i wczytania w grze wymaga jeszcze walidacji.
 
+
+## Usuwanie swiata multiplayer
+**Moje swiaty → wybierz swiat → Usun swiat multiplayer** otwiera potwierdzenie z nazwa swiata. Domyslnie zaznaczone jest **Anuluj**. Usuwanie obejmuje zapisy wybranego swiata hosta; oryginal singleplayer i lokalne profile gosci pozostaja. Przebieg usuwania przez natywne menu wymaga jeszcze sprawdzenia w grze.
+
