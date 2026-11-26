@@ -69,6 +69,8 @@ internal static class NativeMenu
     private static bool customPage;
     private static bool homeVisible;
     private static string? pendingJoin;
+    private static bool joinLoading;
+    private static bool enteringWorld;
     private static bool pendingHost;
     private static bool navigationPending;
     private static int pageRevision;
@@ -357,28 +359,82 @@ internal static class NativeMenu
 
     private static void StartJoin(string code)
     {
+        if (joinLoading) return;
         lanVisible = false;
         LanDiscovery.StopBrowsing();
         CoopSaveManager.SelectRole("guest");
         pendingJoin = code;
-        // A staging world is created once; the child never selects or manages a save file.
+        joinLoading = true;
+        Page(("Joining...", () => { }));
+        // Do not open NewGameOptionsUIRoot: guests do not configure the host's
+        // world. Build the native default settings directly in guest-only storage.
         var staging = GameContext.Instance.AutoSaveDirector.GetSaveToContinue();
-        if (staging != null)
-            GameContext.Instance.AutoSaveDirector.BeginLoad(staging.SaveIdentifier, null);
-        else
-            NewGameButton().InvokeBehavior();
+        try
+        {
+            if (staging != null && !staging.IsInvalid)
+            {
+                SrLogger.LogMessage("Playground: reusing guest staging save without world settings.");
+                GameContext.Instance.AutoSaveDirector.BeginLoad(staging.SaveIdentifier, null);
+            }
+            else
+            {
+                SrLogger.LogMessage("Playground: preparing guest staging save automatically.");
+                var definitions = GameContext.Instance.OptionsDirector._optionsItemDefinitionsProvider
+                    .GetAssetForCurrentPlatform().GetRuntime().GameBasedDefinitions;
+                var settings = new Il2CppMonomiPark.SlimeRancher.DataModel.GameSettingsModel(
+                    definitions.Cast<Il2CppSystem.Collections.Generic.IEnumerable<Il2CppMonomiPark.SlimeRancher.Options.OptionsItemDefinition>>());
+                var icons = GameContext.Instance.GameSettingsDirector.gameIconCollection;
+                if (icons.Count == 0) throw new InvalidOperationException("No native save icon is available.");
+                settings.SetGameIconForNewGame(icons[0]);
+                GameContext.Instance.AutoSaveDirector.StartNewGame(0, settings);
+            }
+        }
+        catch
+        {
+            pendingJoin = null;
+            joinLoading = false;
+            CoopSaveManager.SelectRole("singleplayer");
+            throw;
+        }
     }
 
     internal static IEnumerator EnterWorld()
     {
-        if (!pendingHost && pendingJoin == null) yield break;
+        if (enteringWorld || (!pendingHost && pendingJoin == null)) yield break;
+        enteringWorld = true;
+        var hiddenIntroCanvases = new List<(Canvas canvas, bool enabled)>();
+        GameObject? joiningDisplay = null;
+        try
+        {
         yield return new WaitForSceneGroupLoad();
         yield return new WaitFrames(5);
         var intro = Resources.FindObjectsOfTypeAll<Il2CppMonomiPark.SlimeRancher.UI.IntroSequence.IntroSequenceUIRoot>()
             .FirstOrDefault(p => p.gameObject.activeInHierarchy);
-        while (intro != null && intro.gameObject.activeInHierarchy) yield return null;
+        var nextFrame = 0f;
+        var introCanvases = pendingJoin != null && intro != null ? intro.GetComponentsInChildren<Canvas>(true) : null;
+        if (introCanvases != null)
+        {
+            joiningDisplay = GuestJoinLoading.Show(intro!.GetComponentInChildren<Il2CppTMPro.TMP_Text>(true));
+            foreach (var canvas in introCanvases)
+            {
+                hiddenIntroCanvases.Add((canvas, canvas.enabled));
+                canvas.enabled = false;
+            }
+        }
+        while (intro != null && intro.gameObject.activeInHierarchy)
+        {
+            if (pendingJoin != null && intro._isInputEnabled && Time.realtimeSinceStartup >= nextFrame)
+            {
+                // Use the native progression path; forcing EndSequence can abort
+                // loading. Only guests bypass the local staging world's prologue.
+                nextFrame = Time.realtimeSinceStartup + 0.2f;
+                intro.NextOnPerformed(new Il2CppMonomiPark.SlimeRancher.Input.InputEventData { Value = 1 });
+            }
+            yield return null;
+        }
         yield return new WaitForSceneGroupLoad();
         while (!GameHelpers.inGame) yield return null;
+        if (pendingJoin != null) SrLogger.LogMessage("Playground: guest staging is ready; connecting to the selected host.");
         CoopSaveManager.MarkSessionStarted();
         if (pendingHost)
         {
@@ -387,9 +443,21 @@ internal static class NativeMenu
         }
         else if (pendingJoin != null)
         {
+            // Checkpoint the completed local intro before switching to host-bound
+            // guest storage, so subsequent joins can reuse this staging save.
+            GameContext.Instance.AutoSaveDirector.SaveGameAndFlush();
             var code = pendingJoin;
             pendingJoin = null;
             if (JoinCode.TryDecode(code, out var ip, out var port, out _)) Main.Client.Connect(ip.ToString(), port);
+        }
+        }
+        finally
+        {
+            if (joiningDisplay != null) Object.Destroy(joiningDisplay);
+            foreach (var (canvas, enabled) in hiddenIntroCanvases)
+                if (canvas != null) canvas.enabled = enabled;
+            enteringWorld = false;
+            joinLoading = false;
         }
     }
 
@@ -407,6 +475,7 @@ internal static class NativeMenu
 
     internal static bool HandleCancel()
     {
+        if (joinLoading) return false;
         if (!customPage) return true;
         Navigate(Back);
         return false;
@@ -427,6 +496,7 @@ internal static class NativeMenu
             case "worlds": ShowWorlds(); break;
             case "join": ShowJoin(); break;
             case "lan": ShowLanGames(); break;
+            case "join-smoke": StartJoin(JoinCode.Encode(IPAddress.Parse("127.0.0.2"), 1919)); break;
             case "import": ShowImportWorlds(); break;
             case "join-paste": JoinCopiedCode(); break;
             case "join-help": ShowJoinHelp(); break;

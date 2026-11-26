@@ -75,5 +75,6 @@ No games found — same Wi-Fi and version?|Brak gier — ta sama sieć Wi-Fi i w
 LAN search unavailable — try again|Wyszukiwanie LAN niedostępne — ponów|LAN-Suche nicht verfügbar – erneut versuchen|Recherche LAN indisponible — réessayer|Búsqueda LAN no disponible — reintentar|Busca local indisponível — tentar novamente|Поиск в сети недоступен — повторить|LAN検索ができません — もう一度試す|LAN 검색 불가 — 다시 시도|局域网搜索不可用 — 请重试
 Next games|Kolejne gry|Weitere Spiele|Parties suivantes|Más partidas|Próximos jogos|Другие игры|次のゲーム|다음 게임|更多游戏
 Refresh LAN games|Odśwież gry w LAN|LAN-Spiele aktualisieren|Actualiser les parties LAN|Actualizar partidas LAN|Atualizar jogos locais|Обновить список игр|LANのゲームを更新|LAN 게임 새로고침|刷新局域网游戏
-Join: |Dołącz: |Beitreten: |Rejoindre : |Unirse: |Entrar: |Войти: |参加：|참가: |加入：";
+Join: |Dołącz: |Beitreten: |Rejoindre : |Unirse: |Entrar: |Войти: |参加：|참가: |加入：
+Joining...|Dołączanie...|Verbindung wird hergestellt...|Connexion en cours...|Uniéndose...|Entrando...|Подключение...|参加中...|참가 중...|正在加入……";
 }

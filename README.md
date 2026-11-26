@@ -64,3 +64,7 @@ Przyciski Playground w natywnym menu glownym i pauzie dopasowuja szerokosc do pr
 Host otwiera swiat multiplayer. Drugi gracz wybiera **Join a friend → Find games on LAN**, a nastepnie **Join: nazwa swiata**. Lista odswieza sie automatycznie; zamkniete swiaty wygasaja po kilku sekundach. Widoczne sa hosty z identycznym wydaniem Playground. Nie trzeba konta ani zaproszenia Steam do samego wykrywania.
 Wyszukiwanie uzywa broadcastu UDP 19190 i odpowiedzi hosta w sieci lokalnej; polaczenie gry korzysta z portu hosta (domyslnie UDP 1919). Zapora musi pozwalac grze komunikowac sie w sieci prywatnej. Siec goscinna Wi-Fi lub izolacja klientow routera moze blokowac wyszukiwanie. Kod zaproszenia pozostaje dostepny. Testy transportu nie zastepuja pelnego testu dolaczenia z dwoch komputerow.
 
+
+## Pierwsze dolaczenie goscia
+Od preview 10 dolaczanie z LAN lub kodu nie otwiera ustawien nowego swiata. Playground sam przygotowuje lokalny staging w katalogu goscia, automatycznie przechodzi prolog i pokazuje **Joining...**. Gotowy staging jest zapisywany i wykorzystywany przy kolejnych dolaczeniach. Ustawienia tworzenia swiata hosta pozostaja dostepne tylko dla hosta.
+
