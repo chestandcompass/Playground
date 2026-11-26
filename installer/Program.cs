@@ -53,7 +53,7 @@ namespace PlaygroundSetup
                 if (args.Contains("--uninstall") || args.Contains("--test-uninstall"))
                 {
                     Maintenance.Uninstall(game, args.Contains("--test-uninstall"));
-                    if (!args.Contains("--test-uninstall")) MessageBox.Show("Playground został odinstalowany. Twoje zapisy zostały zachowane.", "Playground");
+                    if (!args.Contains("--test-uninstall")) MessageBox.Show("Playground has been uninstalled. Your saves have been preserved.", "Playground");
                     return 0;
                 }
                 if (args.Contains("--verify"))
@@ -149,7 +149,7 @@ namespace PlaygroundSetup
         {
             if (String.IsNullOrWhiteSpace(directory) || !File.Exists(Path.Combine(directory, "SlimeRancher2.exe")) ||
                 !File.Exists(Path.Combine(directory, "GameAssembly.dll")) || !Directory.Exists(Path.Combine(directory, "SlimeRancher2_Data")))
-                throw new InvalidOperationException("Wybierz folder z zainstalowanym Slime Rancher 2.");
+                throw new InvalidOperationException("Select the folder containing your Slime Rancher 2 installation.");
         }
 
         static string Hash(string path)
@@ -166,7 +166,7 @@ namespace PlaygroundSetup
             string zip = Path.Combine(root, "payload.zip");
             using (Stream source = Assembly.GetExecutingAssembly().GetManifestResourceStream("Payload"))
             using (Stream destination = File.Create(zip)) source.CopyTo(destination);
-            if (Hash(zip) != PayloadInfo.Sha256) throw new InvalidDataException("Plik instalatora jest uszkodzony. Pobierz go ponownie z repozytorium Playground.");
+            if (Hash(zip) != PayloadInfo.Sha256) throw new InvalidDataException("The installer is damaged. Download it again from the Playground repository.");
             ExtractSafe(zip, root);
             return root;
         }
@@ -179,7 +179,7 @@ namespace PlaygroundSetup
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
                     string target = Path.GetFullPath(Path.Combine(root, entry.FullName));
-                    if (!target.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Nieprawidlowy katalog w paczce.");
+                    if (!target.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Invalid directory in the installation package.");
                     if (entry.FullName.EndsWith("/") || entry.FullName.EndsWith(@"\")) { Directory.CreateDirectory(target); continue; }
                     Directory.CreateDirectory(Path.GetDirectoryName(target));
                     entry.ExtractToFile(target, true);
@@ -199,7 +199,7 @@ namespace PlaygroundSetup
             if (release == null || release.Schema != 1 || !Version.TryParse(release.Version, out parsed) || release.Build < 1 ||
                 release.GameVersion != "1.3.0" || !Regex.IsMatch(release.Sha256 ?? "", "^[a-fA-F0-9]{64}$") ||
                 !(release.DllUrl ?? "").StartsWith(Repository + "/releases/download/", StringComparison.Ordinal))
-                throw new InvalidDataException("To wydanie Playground nie pasuje do tego instalatora lub wersji gry.");
+                throw new InvalidDataException("This Playground release is not compatible with this installer or game version.");
         }
 
         static bool HasRuntime()
@@ -214,14 +214,14 @@ namespace PlaygroundSetup
             var release = ReadRelease(File.ReadAllBytes(Path.Combine(payload, "update.json")));
             ValidateRelease(release);
             if (Hash(Path.Combine(payload, @"Mods\Playground.dll")) != release.Sha256.ToLowerInvariant())
-                throw new InvalidDataException("Nieprawidlowa suma kontrolna Playground.");
+                throw new InvalidDataException("The Playground checksum is invalid.");
         }
 
         internal static void Install(string game, Action<string> progress, bool offline)
         {
             VerifyGame(game);
-            if (Process.GetProcessesByName("SlimeRancher2").Length > 0) throw new InvalidOperationException("Najpierw zamknij Slime Rancher 2, a potem uruchom instalator ponownie.");
-            progress("Przygotowuję Playground...");
+            if (Process.GetProcessesByName("SlimeRancher2").Length > 0) throw new InvalidOperationException("Close Slime Rancher 2, then run the installer again.");
+            progress("Preparing Playground...");
             string payload = ExtractPayload();
             VerifyPayload(payload);
             ReleaseInfo release = ReadRelease(File.ReadAllBytes(Path.Combine(payload, "update.json")));
@@ -230,7 +230,7 @@ namespace PlaygroundSetup
             {
                 try
                 {
-                    progress("Sprawdzam najnowsze wydanie...");
+                    progress("Checking for the latest release...");
                     using (var client = new TimedWebClient())
                     {
                         client.Headers[HttpRequestHeader.UserAgent] = "Playground-Setup/0.1.0";
@@ -242,36 +242,36 @@ namespace PlaygroundSetup
                             string downloaded = Path.Combine(payload, "downloaded.dll");
                             client.DownloadFile(remote.DllUrl, downloaded);
                             if (new FileInfo(downloaded).Length > 8388608 || Hash(downloaded) != remote.Sha256.ToLowerInvariant())
-                                throw new InvalidDataException("Pobrana aktualizacja jest uszkodzona.");
+                                throw new InvalidDataException("The downloaded update is damaged.");
                             mod = downloaded;
                             release = remote;
                         }
                     }
                 }
-                catch (WebException) { progress("Używam wersji dołączonej do instalatora..."); }
+                catch (WebException) { progress("Using the release bundled with the installer..."); }
             }
             if (!Hash(Path.Combine(game, "GameAssembly.dll")).Equals(release.GameAssemblySha256, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Ta wersja Playground jest przygotowana dla Slime Rancher 2 w wersji 1.3.0. Zainstalowana gra ma inny build.");
+                throw new InvalidOperationException("This Playground release requires Slime Rancher 2 version 1.3.0. The installed game has a different build.");
             string previousMetadata = Path.Combine(game, "Playground.version.json");
             if (File.Exists(previousMetadata))
             {
                 ReleaseInfo previous = ReadRelease(File.ReadAllBytes(previousMetadata));
                 if (new Version(previous.Version) > new Version(release.Version) ||
                     (previous.Version == release.Version && previous.Build > release.Build))
-                { progress("Masz już nowszą wersję Playground."); return; }
+                { progress("A newer version of Playground is already installed."); return; }
             }
             if (!HasRuntime())
             {
-                progress("Instaluję wymagany składnik Microsoft .NET 6...");
+                progress("Installing the required Microsoft .NET 6 runtime...");
                 var info = new ProcessStartInfo(Path.Combine(payload, @"Dependencies\dotnet-runtime-6.0.36-win-x64.exe"), "/install /quiet /norestart");
                 info.UseShellExecute = true;
-                using (Process process = Process.Start(info)) { process.WaitForExit(); if (process.ExitCode != 0 && process.ExitCode != 3010) throw new InvalidOperationException("Instalacja Microsoft .NET nie została zakończona."); }
-                if (!HasRuntime()) throw new InvalidOperationException("Uruchom ponownie komputer po instalacji Microsoft .NET, a potem ponów instalację Playground.");
+                using (Process process = Process.Start(info)) { process.WaitForExit(); if (process.ExitCode != 0 && process.ExitCode != 3010) throw new InvalidOperationException("Microsoft .NET installation did not complete."); }
+                if (!HasRuntime()) throw new InvalidOperationException("Restart your computer after installing Microsoft .NET, then install Playground again.");
             }
-            if (Process.GetProcessesByName("SlimeRancher2").Length > 0) throw new InvalidOperationException("Gra została uruchomiona. Zamknij ją przed instalacją aktualizacji.");
+            if (Process.GetProcessesByName("SlimeRancher2").Length > 0) throw new InvalidOperationException("The game has started. Close it before installing the update.");
             string existingVersionDll = Path.Combine(game, "version.dll");
             if (File.Exists(existingVersionDll) && !Directory.Exists(Path.Combine(game, "MelonLoader")))
-                throw new InvalidOperationException("W grze jest inny dodatek używający version.dll. Playground nie zastąpi tego pliku.");
+                throw new InvalidOperationException("Another mod is using version.dll in this game installation. Playground will not replace that file.");
             string backup = Path.Combine(game, "PlaygroundBackups", DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-ffff"));
             string mods = Path.Combine(game, "Mods");
             Directory.CreateDirectory(mods);
@@ -286,8 +286,8 @@ namespace PlaygroundSetup
             if (needsLoader)
             {
                 if (File.Exists(Path.Combine(game, "version.dll")) && !Directory.Exists(Path.Combine(game, "MelonLoader")))
-                    throw new InvalidOperationException("W grze jest inny dodatek używający version.dll. Playground nie zastąpi tego pliku.");
-                progress("Instaluję składnik uruchamiający mod...");
+                    throw new InvalidOperationException("Another mod is using version.dll in this game installation. Playground will not replace that file.");
+                progress("Installing the mod loader...");
                 string loader = Path.Combine(payload, "Loader");
                 Directory.CreateDirectory(loader);
                 ExtractSafe(Path.Combine(payload, @"Dependencies\MelonLoader-0.7.3-x64.zip"), loader);
@@ -306,7 +306,7 @@ namespace PlaygroundSetup
                 if (File.Exists(existingVersionDll)) { Directory.CreateDirectory(backup); File.Copy(existingVersionDll, Path.Combine(backup, "version.dll"), true); }
                 File.Copy(Path.Combine(loader, "version.dll"), existingVersionDll, true);
             }
-            progress("Instaluję Playground...");
+            progress("Installing Playground...");
             Maintenance.HideConsole(game);
             string destination = Path.Combine(mods, "Playground.dll");
             string pending = destination + ".pending";
@@ -323,7 +323,7 @@ namespace PlaygroundSetup
             string installedSetup = Path.Combine(game, "PlaygroundSetup.exe");
             if (!Path.GetFullPath(self).Equals(Path.GetFullPath(installedSetup), StringComparison.OrdinalIgnoreCase)) File.Copy(self, installedSetup, true);
             if (!offline) Maintenance.Register(game, release.Version + " (test " + release.Build + ")");
-            progress("Gotowe! Playground jest zainstalowany.");
+            progress("Done! Playground is installed.");
         }
     }
 
@@ -355,18 +355,18 @@ namespace PlaygroundSetup
             Text = "Playground"; ClientSize = new Size(580, 280); StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; BackColor = Color.FromArgb(245, 248, 250);
             var title = new Label { Text = "Playground", Font = new Font("Segoe UI", 28, FontStyle.Bold), ForeColor = Color.FromArgb(20, 165, 188), AutoSize = true, Location = new Point(28, 22) };
-            var subtitle = new Label { Text = "Wspólna przygoda w Slime Rancher 2", Font = new Font("Segoe UI", 12), AutoSize = true, Location = new Point(32, 82) };
-            status.Text = "Znajduję grę i przygotowuję instalację..."; status.Font = new Font("Segoe UI", 11); status.SetBounds(32, 126, 510, 44);
+            var subtitle = new Label { Text = "An adventure together in Slime Rancher 2", Font = new Font("Segoe UI", 12), AutoSize = true, Location = new Point(32, 82) };
+            status.Text = "Finding the game and preparing installation..."; status.Font = new Font("Segoe UI", 11); status.SetBounds(32, 126, 510, 44);
             progress.SetBounds(32, 181, 510, 12); progress.Style = ProgressBarStyle.Marquee;
-            action.Text = "Chwileczkę..."; action.Enabled = false; action.SetBounds(333, 218, 210, 38); action.FlatStyle = FlatStyle.Flat;
+            action.Text = "Please wait..."; action.Enabled = false; action.SetBounds(333, 218, 210, 38); action.FlatStyle = FlatStyle.Flat;
             action.BackColor = Color.FromArgb(232, 77, 142); action.ForeColor = Color.White; action.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-            remove.Text = "Odinstaluj"; remove.SetBounds(32, 218, 170, 38); remove.Visible = false;
+            remove.Text = "Uninstall"; remove.SetBounds(32, 218, 170, 38); remove.Visible = false;
             Controls.AddRange(new Control[] { title, subtitle, status, progress, action, remove });
             action.Click += async delegate { if (managing) { managing = false; await PerformInstall(); return; } if (installed && selected != null) Process.Start("steam://rungameid/1657630"); Close(); };
             remove.Click += async delegate
             {
                 action.Enabled = false; remove.Enabled = false;
-                try { await Task.Run(delegate { Maintenance.Uninstall(selected, false); }); status.Text = "Playground usunięty. Zapisy zachowane."; installed = false; managing = false; selected = null; action.Text = "Zamknij"; remove.Visible = false; }
+                try { await Task.Run(delegate { Maintenance.Uninstall(selected, false); }); status.Text = "Playground removed. Your saves have been preserved."; installed = false; managing = false; selected = null; action.Text = "Close"; remove.Visible = false; }
                 catch (Exception ex) { status.Text = ex.Message; }
                 action.Enabled = true; remove.Enabled = true;
             };
@@ -382,13 +382,13 @@ namespace PlaygroundSetup
                 {
                     string[] games = Program.FindGames();
                     if (games.Length == 1) selected = games[0];
-                    else using (var dialog = new OpenFileDialog { Title = "Wskaż SlimeRancher2.exe", Filter = "Slime Rancher 2|SlimeRancher2.exe" })
+                    else using (var dialog = new OpenFileDialog { Title = "Select SlimeRancher2.exe", Filter = "Slime Rancher 2|SlimeRancher2.exe" })
                     { if (dialog.ShowDialog(this) != DialogResult.OK) { Close(); return; } selected = Path.GetDirectoryName(dialog.FileName); }
                 }
                 if (File.Exists(Path.Combine(selected, @"Mods\Playground.dll")))
                 {
-                    managing = true; status.Text = "Playground jest zainstalowany. Wybierz aktualizację lub odinstalowanie.";
-                    progress.Style = ProgressBarStyle.Continuous; action.Text = "Aktualizuj"; action.Enabled = true; remove.Visible = true; return;
+                    managing = true; status.Text = "Playground is installed. Choose Update or Uninstall.";
+                    progress.Style = ProgressBarStyle.Continuous; action.Text = "Update"; action.Enabled = true; remove.Visible = true; return;
                 }
                 await PerformInstall();
             }
@@ -402,7 +402,7 @@ namespace PlaygroundSetup
                 action.Enabled = false; remove.Enabled = false; progress.Style = ProgressBarStyle.Marquee;
                 await Task.Run(delegate { Program.Install(selected, delegate(string message) { BeginInvoke((Action)delegate { status.Text = message; }); }, false); });
                 progress.Style = ProgressBarStyle.Continuous; progress.Value = 100;
-                installed = true; action.Text = "Uruchom grę"; action.Enabled = true; remove.Visible = true; remove.Enabled = true;
+                installed = true; action.Text = "Launch game"; action.Enabled = true; remove.Visible = true; remove.Enabled = true;
             }
             catch (Exception ex) { ShowError(ex); }
         }
@@ -410,7 +410,7 @@ namespace PlaygroundSetup
         void ShowError(Exception ex)
         {
             status.Text = ex.Message; progress.Style = ProgressBarStyle.Continuous;
-            selected = null; managing = false; action.Text = "Zamknij"; action.Enabled = true;
+            selected = null; managing = false; action.Text = "Close"; action.Enabled = true;
         }
     }
 }

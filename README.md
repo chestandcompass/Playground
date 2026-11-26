@@ -1,106 +1,108 @@
 # Playground
 
-Samodzielny mod multiplayer dla **Slime Rancher 2 1.3.0 na Windows x64**. Natywne menu gry, osobne zapisy multiplayer i lokalny profil goscia dla kazdego swiata hosta.
+An **unofficial, experimental multiplayer mod for Slime Rancher 2 1.3.0 on Windows x64**, with native game menus, separate multiplayer saves, and a local guest profile for each host world.
 
-**Wersja testowa LAN.** Tworzenie, zapis i ponowne wczytanie swiata hosta oraz interfejs zostaly sprawdzone w grze. Pelny scenariusz goscia na drugim komputerze pozostaje do walidacji. Polaczenia przez internet za NAT nie sa jeszcze obslugiwane.
+**LAN preview:** host world creation, saving/loading, and several native UI and synchronization paths have been checked in-game. Full host-and-guest validation on two computers is still pending. Internet connections through NAT are not currently supported.
 
-## Instalacja
+## Download and install
 
-Pobierz **PlaygroundSetup.exe** z [wydan](https://github.com/robertbrania-code/Playground/releases) i uruchom. Instalator sam znajduje gre w bibliotekach Steam, instaluje wymagane skladniki i Playground. Nie trzeba kopiowac DLL ani uruchamiac skryptow. Instalator ma rowniez biezaca wersje offline.
+Download **PlaygroundSetup.exe** from the [releases page](https://github.com/robertbrania-code/Playground/releases) and run it. The installer finds Steam libraries, installs the required components, and installs Playground. It also includes an offline copy of its release.
 
-W menu gry wybierz **Graj ze znajomym / Play with a friend**. Host tworzy lub wybiera swiat; w pauzie moze skopiowac kod zaproszenia. Gosc kopiuje otrzymany kod i wybiera dolaczenie do znajomego. Oba komputery musza miec to samo wydanie Playground.
+Steam detection checks user/system registry entries, game installation records, standard Steam folders, library configuration files, and the game's app manifest. If discovery cannot identify one valid installation, select SlimeRancher2.exe manually.
 
-Playground nie wymaga Starlight, Ranching Together, DiscordRPC ani SharpOpenNat. Skladnikiem ladujacym mod jest MelonLoader 0.7.3; instalator dolacza go oraz wymagany Microsoft .NET 6.
+Playground uses **MelonLoader 0.7.3** and **Microsoft .NET 6**, included by the installer. It does not require a separate installation of Ranching Together, Starlight, DiscordRPC, or SharpOpenNat.
 
-## Aktualizacje i zapisy
+**Both computers must use the same Playground release.** Close the game before installing an update.
 
-Gra sprawdza publiczny plik `update.json`. Dostepna aktualizacja pojawia sie w jej natywnym menu. Po wybraniu aktualizacji zweryfikowany instalator czeka na zamkniecie gry, a potem podmienia DLL i zachowuje poprzednia wersje. Ponowne uruchomienie instalatora rowniez pobiera najnowsze wydanie. Starszy instalator nie cofa nowszej wersji.
+## Play together on LAN
 
-Instalator sprawdza zgodnosc buildu gry i sumy SHA-256. Zapisy znajduja sie poza instalacja: `%LOCALAPPDATA%\Playground\SlimeRancher2`. Zapisy singleplayer pozostaja w katalogu gry w LocalLow. Pliki zapisow nie sa czescia aktualizacji.
+1. On the host computer, choose **Play with a friend**, then create or open a multiplayer world.
+2. On the other computer, choose **Join a friend → Find games on LAN**.
+3. Select **Join: your world name**, enter your player name, choose your appearance, and continue.
 
-## Budowanie ze zrodel
+Only open worlds with the same Playground version appear. The list refreshes automatically and removes expired hosts. A Steam invitation is not required for LAN discovery.
 
-Wymagane: Windows, .NET SDK 8, wlasna legalna instalacja gry 1.3.0 oraz MelonLoader 0.7.3. Uruchom gre z loaderem raz, aby wygenerowac lokalne biblioteki IL2CPP.
+Alternatively, the host can copy an invitation code from the pause menu. The guest copies the received code and selects **Paste code and join**. Codes do not provide internet relay or NAT traversal.
 
-```powershell
-.\Prepare-References.ps1 -GameDirectory 'sciezka-do-gry'
-dotnet build SR2MP -c Release
-dotnet run --project tests/StorageTests -c Release
-.\Build-Installer.ps1 -GameDirectory 'sciezka-do-gry'
-```
+Discovery uses **UDP 19190**. The game connection uses the host's port, **UDP 1919** by default. Allow the game to communicate on your private network. Guest Wi-Fi and router client isolation can prevent discovery.
 
-Biblioteki gry nie sa dystrybuowane i nie wolno ich dodawac do repozytorium. Do kolejnego wydania zmien `release.json`; builder synchronizuje wersje w kodzie, tworzy instalator, DLL i manifest z hashami. Plik `update.json` nalezy publikowac wraz z odpowiadajacymi mu plikami wydania.
+The first guest connection prepares a separate local staging save, skips its prologue, and displays **Joining...**. It should not ask the guest to configure a new world. The staging save is reused for later connections.
 
-## Licencja i pochodzenie
+## Player name and appearance
 
-GPL-3.0, patrz [LICENSE](LICENSE). Kod synchronizacji zostal zaadaptowany z [Ranching Together / pyeight](https://github.com/pyeight/SlimeRancher2Multiplayer), autorstwa Shark (py8) i wspoltworcow. Zachowujemy autorstwo upstream. Playground dodaje samodzielna integracje z gra, natywne menu, izolacje zapisow, instalator i aktualizacje. Projekt nie jest oficjalnym dodatkiem Monomi Park i nie zawiera plikow gry.
+Before hosting or joining, the native menu asks for **Your name**. Confirmed names are remembered locally and appear above players and on their markers. Names are limited to 24 characters; empty names are rejected. Name changes do not change player identity or save associations.
 
-## Konsola i odinstalowanie
+**Hair color** cycles through Original, Blond, Brown, Black, Ginger, Pink, and Purple. Original is the default. The main-menu character previews the selection. **Continue** remembers the name and color; **Back** cancels the edit. Hair customization is a Playground feature.
 
-Instalator domyslnie ukrywa konsole MelonLoadera takze przy uruchamianiu gry ze Steam. Logi nadal zapisuja sie do plikow; inne ustawienia loadera sa zachowywane.
+Original restores the game's exact hair material. Other colors use separate hair materials and locally generated textures, preserving skin, other players, and original game assets. Generated textures have bounded resolution and are cached per color.
 
-Aby odinstalowac, otworz instalator ponownie i wybierz **Odinstaluj**, albo wybierz **Playground — Slime Rancher 2** w zainstalowanych aplikacjach Windows. Zapisy pozostaja na dysku. Gdy inne mody, pluginy lub UserLibs potrzebuja loadera, zostaje on aktywny; bez nich znany loader Playground zostaje wylaczony. Poprzednie pliki sa archiwizowane w PlaygroundBackups. Wspolny Microsoft .NET nie jest usuwany.
+Each player's native **Vacpack style** is synchronized separately. The guest's style is stored locally beside their profile for that host world and restored on reconnect. Appearance packets contain built-in style identifiers and a validated hair-color value, not downloaded materials or image files. Received appearance is cached until the corresponding player model exists.
 
-## Kopia swiata singleplayer
-W menu Playground wybierz **Skopiuj swiat singleplayer / Copy a singleplayer world**, wybierz swiat i potwierdz kopiowanie. Najnowszy poprawny zapis trafi do **Moje swiaty / My worlds**. Oryginal pozostaje bez zmian; oba swiaty rozwijaja sie niezaleznie. Ponowny import tego samego swiata jest blokowany, aby chronic postepy multiplayer. Kopiowanie plikow sprawdzono automatycznie; caly przebieg importu i wczytania w grze wymaga jeszcze walidacji.
+## Multiplayer worlds and saves
 
+Multiplayer saves are stored outside the game installation:
 
-## Usuwanie swiata multiplayer
-**Moje swiaty → wybierz swiat → Usun swiat multiplayer** otwiera potwierdzenie z nazwa swiata. Domyslnie zaznaczone jest **Anuluj**. Usuwanie obejmuje zapisy wybranego swiata hosta; oryginal singleplayer i lokalne profile gosci pozostaja. Przebieg usuwania przez natywne menu wymaga jeszcze sprawdzenia w grze.
+    %LOCALAPPDATA%\Playground\SlimeRancher2
 
+Singleplayer saves stay in the game's original LocalLow location. Mod updates do not contain or replace saves. Guests keep a local profile associated with the host world's stable identifier. Shared progression and currencies come from the host; the guest profile restores personal vacuum contents.
 
-## Jezyki menu Playground
-Menu, pomoc, pauza, potwierdzenia i komunikaty aktualizacji uzywaja jezyka wybranego w grze: en, de, fr, es, pt, ru, ja, ko, zh (uproszczony). Zachowano rowniez polskie tlumaczenia na wypadek dostepnego locale pl; Playground nie dodaje polskiego jezyka do samej gry. Nieznany jezyk korzysta z angielskiego. Nazwy swiatow nie sa tlumaczone. 34 teksty sprawdzono automatycznie dla wszystkich 10 katalogow; wyglad, dlugosc tekstow i zmiana jezyka na zywo wymagaja jeszcze kontroli w grze. Instalator pozostaje po polsku.
+In **My worlds**, choose a world to play, rename, or delete it. Display names are separate metadata: renaming does not change the native world identifier, save filenames, or guest-profile association.
 
+### Deliberate singleplayer import
 
-Instalator preview 7 rozszerza wykrywanie Steam o rejestr uzytkownika i systemu (32/64 bit), InstallLocation gry, standardowe foldery Steam, stare i nowe libraryfolders.vdf oraz rzeczywisty folder z appmanifest_1657630.acf. Niepelne instalacje sa pomijane. Przy braku jednoznacznego wyniku mozna wskazac SlimeRancher2.exe recznie.
+Choose **Copy a singleplayer world**, select a world, and confirm. Playground copies its latest valid snapshot into multiplayer storage. The original stays unchanged, and the two worlds progress independently. Importing the same world again is blocked to protect existing multiplayer progress. You can rename the imported multiplayer world afterward.
 
+### Delete a multiplayer world
 
-## Dopasowanie przyciskow
-Przyciski Playground w natywnym menu glownym i pauzie dopasowuja szerokosc do przetlumaczonego napisu. Przy granicy ekranu tekst zawija sie, a przycisk rosnie na wysokosc. Wspoldzielone przyciski gry odzyskuja poprzednie ustawienia po wyjsciu z menu dodatku.
+**My worlds → select a world → Delete multiplayer world** opens a separate confirmation showing the world's name, with **Cancel** selected initially. Deletion applies to that host world; it preserves the original singleplayer world and local guest profiles. Full in-game import and deletion workflows still need further validation.
 
+## Host authority and synchronization
 
-## Dolaczanie bez kodu w LAN
-Host otwiera swiat multiplayer. Drugi gracz wybiera **Join a friend → Find games on LAN**, a nastepnie **Join: nazwa swiata**. Lista odswieza sie automatycznie; zamkniete swiaty wygasaja po kilku sekundach. Widoczne sa hosty z identycznym wydaniem Playground. Nie trzeba konta ani zaproszenia Steam do samego wykrywania.
-Wyszukiwanie uzywa broadcastu UDP 19190 i odpowiedzi hosta w sieci lokalnej; polaczenie gry korzysta z portu hosta (domyslnie UDP 1919). Zapora musi pozwalac grze komunikowac sie w sieci prywatnej. Siec goscinna Wi-Fi lub izolacja klientow routera moze blokowac wyszukiwanie. Kod zaproszenia pozostaje dostepny. Testy transportu nie zastepuja pelnego testu dolaczenia z dwoch komputerow.
+The host controls **Tarr, feral slimes, and the damage multiplier**. Guests receive these rules on joining, resynchronizing, and subsequent changes. Guest controls are read-only and marked **Controlled by the host**. Revision numbers prevent stale rule packets from restoring older values.
 
+Graphics, audio, controls, subtitles, tutorials, and player identity remain personal settings.
 
-## Pierwsze dolaczenie goscia
-Od preview 10 dolaczanie z LAN lub kodu nie otwiera ustawien nowego swiata. Playground sam przygotowuje lokalny staging w katalogu goscia, automatycznie przechodzi prolog i pokazuje **Joining...**. Gotowy staging jest zapisywany i wykorzystywany przy kolejnych dolaczeniach. Ustawienia tworzenia swiata hosta pozostaja dostepne tylko dla hosta.
+Storage synchronization uses authoritative absolute snapshots with revisions. States received before a storage object is ready are retained for later application. Storage registration, slot definitions/order, and duplicate withdrawal notifications have been addressed.
 
+New gadget placement from shared stock is decided by the host. Competing requests for the last item can create only one gadget and consume one item. Repeating an accepted request does not charge again; failed creation restores the reserved item. Moving an already picked-up gadget follows the native path.
 
-## Imie gracza
-Przed utworzeniem/otwarciem swiata hosta oraz dolaczeniem z LAN/kodu pojawia sie pole **Your name / Twoje imie** z natywnymi przyciskami Dalej/Wroc. Wpisana i zatwierdzona nazwa jest zapamietywana lokalnie w preferencjach Playground i podpowiadana przy nastepnym razie. Enter zatwierdza, Escape anuluje. Puste imie nie przechodzi dalej, dlugosc jest ograniczona do 24 znakow. Imie trafia do istniejacych nazw nad postaciami i znacznikow; identyfikator gracza i przypisanie zapisow nie zmieniaja sie.
-Pole dopasowuje sie do tresci. Brakujace znaki polskie sa renderowane przez dynamiczny fallback z systemowej czcionki Windows; pliki fontow nie sa dystrybuowane. Klawiature, Enter, przycisk Dalej, polskie znaki, zapamietywanie i anulowanie sprawdzono w grze. Pelna sesja dwoch PC z nowymi nazwami nie byla jeszcze sprawdzona.
+These changes do not establish that every world interaction is synchronized correctly. Concurrent interactions and full two-computer play still require testing.
 
+## Updates and uninstalling
 
-## Preview 12: formularze i nazwy swiatow
-Naprawiono przyciski Continue i Back po wpisaniu imienia: edytor nie odbiera juz stale fokusu przyciskom, a natywne zatwierdzanie wybiera wlasciwa akcje. Klikniecie Continue, klikniecie Back bez zapisu edycji, Enter oraz ponowne otwarcie z zapamietanym imieniem sprawdzono w grze.
+Playground checks the public update manifest and shows updates in the native menu. The downloaded installer is checked before use, waits for the game to close, and preserves the previous DLL. Running the installer again also checks for the latest release. An older installer does not downgrade a newer installed version.
 
-W Moje swiaty mozna zmienic nazwe swiata multiplayer. Etykieta jest osobnymi metadanymi: nie zmienia natywnego identyfikatora swiata, plikow .sav ani przypisania profili gosci. Import singleplayer pozostaje osobna, swiadoma operacja. Testy zapisu etykiet i izolacji danych przechodza; scenariusz goscia na drugim komputerze po zmianie nazwy nadal wymaga walidacji.
+The installer verifies game-build compatibility and SHA-256 hashes. Its interface, status messages, and Playground-generated errors are in English.
 
-## Zasady swiata ustala host
-Od preview 13 Tarr, dzikie slime i mnoznik obrazen sa przesylane od hosta do goscia przy dolaczeniu i po zmianie zasad. U goscia te opcje sa tylko do odczytu z opisem "Controlled by the host". Zmiana imienia, grafiki, dzwieku, sterowania, napisow i samouczkow pozostaje lokalna. Reguly maja numer rewizji, aby opozniony pakiet nie przywrocil starszego ustawienia. Host i gosc musza miec to samo wydanie Playground.
+The MelonLoader console is hidden by default, including when launching through Steam. Logs are still written to disk, and other loader settings are preserved.
 
-Walidacja preview 13: 79 testow automatycznych PASS i 7 kontroli na rzeczywistych modelach gry PASS: serializacja pakietu, zmiany trzech regul przez hosta, wylaczone wiersze goscia, blokada zmian/resetu, zastosowanie ustawien hosta, odrzucenie starszej rewizji i zachowanie osobnego samouczka. Testowano jedna instancje z symulowana rola goscia, bez drugiej kopii gry. Pelna proba sieciowa miedzy dwoma komputerami pozostaje do wykonania.
+To remove Playground, reopen the installer and choose **Uninstall**, or use **Playground — Slime Rancher 2** in Windows installed apps. Saves remain on disk. If other mods, plugins, or UserLibs need the loader, it remains active. Otherwise, Playground's recognized loader proxy is disabled. Previous files are archived in PlaygroundBackups; the shared Microsoft .NET runtime is not removed.
 
-## Preview 14: magazyny i ostatnia sztuka gadzetu
-Naprawiono ponowna rejestracje magazynow po wczytaniu swiata, usuwanie starych map slotow i zbyt wczesna inicjalizacje. Zawartosc magazynow goscia jest uzgadniana z pelnymi stanami hosta z numerem rewizji; opoznione stany czekaja na magazyn zamiast odtwarzac przyrosty kilka razy. Host moze obsluzyc magazyn przez model swiata takze bez zaladowanego obiektu sceny. Przy pobieraniu synchronizowana jest rzeczywista liczba usunietych przedmiotow, bez podwojnego zliczania wywolan slotu i calego magazynu. Puste sloty zachowuja definicje, a kolejnosc slotow nie zalezy od kolejnosci slownika.
+## Languages and accessibility
 
-Nowe stawianie gadzetow z puli jest rozstrzygane przez hosta: jedna sztuka oznacza jedna zaakceptowana prosbe, rezerwacje stanu i jeden obiekt. Powtorzenie tej samej prosby nie zuzywa kolejnej sztuki; nieudane tworzenie zwraca rezerwacje. Przenoszenie juz podniesionych gadzetow pozostaje na natywnej sciezce. Zachowane sa czas ladowania gadzetu i zdarzenie jego postawienia.
+Public documentation, release notes, and the installer use English. In-game menus follow the language selected in Slime Rancher 2: English, German, French, Spanish, Portuguese, Russian, Japanese, Korean, or Simplified Chinese. A Polish catalog is retained for an available Polish locale; Playground does not add Polish localization to the base game. Unknown locales fall back to English. Player/world names are never translated.
 
-Walidacja: 87 testow automatycznych PASS oraz 12 sprawdzen w jednej instancji gry PASS (9 magazynow, 3 stawiania gadzetow). Obejmuje rzeczywisty format pakietow, podmiane magazynu, aktualizacje przed rejestracja, pelny pierwszy slot, model bez komponentu sceny, dwie prosby o ostatnia sztuke i ponowienie prosby. To nadal wersja eksperymentalna: pelna proba dwoch PC oraz pozostale przypadki rownoczesnych interakcji wymagaja dalszej walidacji.
+Native menu and pause buttons resize to fit translated captions. Long labels wrap within the screen boundary. Font fallback uses an available Windows font for missing characters; font files are not redistributed. Text length and live locale changes still need broader visual checks.
 
-## Preview 15: osobny wyglad Vacpacka
-Wybrany w natywnym menu gry styl Vacpacka jest przesylany osobno dla kazdego gracza. Zmiana lokalnego stylu nie zmienia pozostalych modeli. Host uzgadnia stany przy dolaczaniu i w trakcie gry; wyglad czeka na model, jezeli pakiet dotrze przed jego utworzeniem. Przesylane sa tylko identyfikatory wbudowanych stylow, bez materialow czy plikow od innych graczy. Serwer przypisuje zmiane do nadawcy na podstawie polaczenia.
+## Validation status
 
-Styl goscia jest zapamietywany lokalnie w `vac-style.txt` obok jego profilu danego swiata hosta i przywracany po ponownym dolaczeniu. Zmiana nazwy swiata nie zmienia tego przypisania. Gra 1.3.0 oferuje style Vacpacka; Playground nie dodaje edytora stroju ani koloru Beatrix.
+The latest gameplay validation passed **90 automated assertions** and **40 checks in one game instance**: 10 hair checks and 30 Vacpack/material/packet checks. Earlier checks covered storage rebinding, delayed storage registration, stock arbitration, and host-controlled rules. Menu typing and appearance previews have also been inspected in-game.
 
-Walidacja preview 15: 87 testow automatycznych PASS oraz 29 sprawdzen kosmetyki w jednej instancji gry PASS (23 style, niezalezne materialy dwoch modeli, brak przemalowywania przez lokalny wybor, powrot do prostego stylu, serializacja, opozniony model/idempotencja, odrzucenie nieznanego stylu). Pelna sesja dwoch PC nadal wymaga sprawdzenia.
+These checks do **not** replace a full session on two computers. Reconnection, appearance delivery, world interactions, imports, deletion, and simultaneous actions need continued player testing. See [CHANGELOG.md](CHANGELOG.md) and individual [release notes](https://github.com/robertbrania-code/Playground/releases) for changes and validation limits.
 
-## Preview 16: kolor wlosow gracza
-Przy wpisywaniu imienia jest natywny przycisk **Hair color / Kolor wlosow**. Kazde nacisniecie wybiera kolejny wariant: Oryginalny, Blond, Brazowy, Czarny, Rudy, Rozowy, Fioletowy. Postac w tle menu pokazuje podglad. Continue zapamietuje imie i kolor lokalnie, Back anuluje edycje. Formularz zmiany nazwy swiata nadal ma tylko nazwe swiata.
+## Build from source
 
-Domyslny Oryginalny uzywa niezmienionego materialu gry. Pozostale warianty dostaja osobne materialy wlosow i tekstury generowane lokalnie z atlasu gry, bez zmiany skory, pozostalych postaci ani plikow gry. Pamiec tekstur ma ograniczona rozdzielczosc i wspoldzielony cache kolorow. Kolor jest dolaczony do pakietow wygladu, walidowany przez hosta i przechowywany do czasu pojawienia sie modelu gracza. Kazdy uczestnik sesji potrzebuje preview 16.
+Requirements: Windows, .NET SDK 8, your own legitimate Slime Rancher 2 1.3.0 installation, and MelonLoader 0.7.3. Launch the game with the loader once to generate local IL2CPP references.
 
-Walidacja preview 16: 90 testow automatycznych PASS, 10 natywnych sprawdzen wlosow PASS i 30 sprawdzen pakietow/materialow Vacpacka PASS w jednej instancji gry. Obejmuje wybrane odcienie tekstur, niezalezne modele, nienaruszona skore i materialy gry, powrot do oryginalu, cache, serializacje koloru i odrzucanie niepoprawnych danych. W menu sprawdzono wpisywanie i przelaczanie kolorow z podgladem. Pelna sesja dwoch PC pozostaje do sprawdzenia.
+    ./Prepare-References.ps1 -GameDirectory 'path-to-game'
+    dotnet build SR2MP -c Release
+    dotnet run --project tests/StorageTests -c Release
+    ./Build-Installer.ps1 -GameDirectory 'path-to-game'
+
+Game libraries are not distributed and must not be committed. For a new release, update release.json. The builder synchronizes version constants and generates the installer, DLL, and update manifest with hashes. Publish the manifest together with its matching release assets.
+
+## License and attribution
+
+**GPL-3.0**; see [LICENSE](LICENSE). Synchronization code was adapted from [Ranching Together / pyeight](https://github.com/pyeight/SlimeRancher2Multiplayer), by **Shark (py8) and contributors**. Upstream authorship is retained. Playground adds standalone game integration, native menus, isolated saves, an installer, and updates.
+
+Playground is **not an official Monomi Park product**, is not affiliated with or endorsed by Monomi Park, and does not include game files.

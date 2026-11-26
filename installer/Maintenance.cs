@@ -114,7 +114,7 @@ namespace PlaygroundSetup
         internal static void Uninstall(string game, bool test)
         {
             Program.VerifyGame(game);
-            if (Process.GetProcessesByName("SlimeRancher2").Length > 0) throw new InvalidOperationException("Zamknij Slime Rancher 2 przed odinstalowaniem Playground.");
+            if (Process.GetProcessesByName("SlimeRancher2").Length > 0) throw new InvalidOperationException("Close Slime Rancher 2 przed odinstalowaniem Playground.");
             InstallState state = ReadState(game);
             string backup = Path.Combine(game, "PlaygroundBackups", "uninstall-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-ffff"));
             Directory.CreateDirectory(backup);
