@@ -66,6 +66,9 @@ internal static class CoopSaveManager
         originalDirectory ??= Storage.savePath;
         Role = role;
         HostWorldRules.Reset();
+        StorageSynchronization.Reset();
+        NetworkAmmoManager.ResetStorageRegistry();
+        HostGadgetPlacement.Reset();
         GuestWorld = null;
         guestWasBound = false;
         restorePending = false;
@@ -81,6 +84,9 @@ internal static class CoopSaveManager
         if (!sessionActive || !Enabled || originalDirectory == null) return;
         sessionActive = false;
         HostWorldRules.Reset();
+        StorageSynchronization.Reset();
+        NetworkAmmoManager.ResetStorageRegistry();
+        HostGadgetPlacement.Reset();
         Role = "singleplayer";
         GuestWorld = null;
         guestWasBound = false;

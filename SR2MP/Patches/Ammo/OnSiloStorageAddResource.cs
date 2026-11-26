@@ -10,9 +10,10 @@ internal static class OnSiloStorageAddResource
 {
     // For Drones
     // MaybeAddAsResource routes through MaybeAddToXSlot, so we need this to prevent duplication
-    internal static bool isDroneResource;
+    private static int resourceDepth;
+    internal static bool isDroneResource => resourceDepth > 0;
 
-    public static void Prefix() => isDroneResource = true;
+    public static void Prefix() => resourceDepth++;
 
     public static void Postfix(SiloStorage __instance, bool __result, IdentifiableType id, int slotIdx, int count)
     {
@@ -36,7 +37,7 @@ internal static class OnSiloStorageAddResource
     
     public static Exception? Finalizer(Exception? __exception)
     {
-        isDroneResource = false;
+        resourceDepth = Math.Max(0, resourceDepth - 1);
         return __exception;
     }
 }

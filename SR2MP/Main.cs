@@ -162,6 +162,7 @@ public sealed class Main : MelonMod
 
     internal static void SendToAllOrServer<T>(T packet) where T : IPacket
     {
+        if (StorageSynchronization.ObserveSmokePacket(packet)) return;
         if (Client.IsConnected)
             Client.SendPacket(packet);
 
@@ -217,6 +218,7 @@ public sealed class Main : MelonMod
         NativeMenu.UpdateLanBrowser();
         PlayerNameEntry.Update();
         HostWorldRules.Update();
+        StorageSynchronization.Update();
         MenuSmokeTest.Update();
     }
 

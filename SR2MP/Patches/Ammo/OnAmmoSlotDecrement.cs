@@ -8,9 +8,13 @@ namespace SR2MP.Patches.Ammo;
 [HarmonyPatch(typeof(AmmoSlot), nameof(AmmoSlot.DecrementAmmo))]
 internal static class OnAmmoSlotDecrement
 {
-    public static void Postfix(AmmoSlot __instance)
+    public static void Prefix(AmmoSlot __instance, out int __state) => __state = __instance.Count;
+    public static void Postfix(AmmoSlot __instance, int __state)
     {
         if ((!Main.Client.IsConnected && !Main.Server.IsRunning) || HandlingPacket) return;
+        if (OnAmmoDecrement.Depth > 0) return;
+        var removed = __state - __instance.Count;
+        if (removed <= 0) return;
 
         if (__instance._count <= 0) __instance._id = null;
 
@@ -20,7 +24,7 @@ internal static class OnAmmoSlotDecrement
         var packet = new AmmoDecrementPacket()
         {
             SlotIndex = (int)index,
-            Count = 1,
+            Count = removed,
             ID = __instance.GetPlotID()!
         };
 

@@ -11,14 +11,11 @@ internal sealed class AmmoDecrementHandler : BasePacketHandler<AmmoDecrementPack
 {
     protected override bool Handle(AmmoDecrementPacket packet, IPEndPoint? _)
     {
-        var ammo = NetworkAmmoManager.GetAmmo(packet.ID);
-
-        if (ammo == null) return false;
-
-        HandlingPacket = true;
-        ammo.Decrement(packet.SlotIndex, packet.Count);
-        HandlingPacket = false;
-
-        return true;
+        StorageSynchronization.RunHostEdit(packet.ID, ammo =>
+        {
+            if (packet.Count <= 0 || packet.SlotIndex < 0 || packet.SlotIndex >= ammo.Slots.Count) return;
+            if (packet.Count <= ammo.Slots[packet.SlotIndex].Count) ammo.Decrement(packet.SlotIndex, packet.Count);
+        });
+        return false;
     }
 }

@@ -64,6 +64,33 @@ try
     File.WriteAllText(labelKey, new string('x', 1025));
     Check(WorldLabels.Read(labels, "1", "native") == "native", "oversized world metadata falls back to the native caption");
     var ruleValues = new[] { "on", "off", "100" };
+    var storageStates = new LatestStorageState<int>();
+    storageStates.Store("collector", 1, 5);
+    storageStates.Store("collector", 2, 3);
+    Check(!storageStates.Store("collector", 1, 5) && storageStates.TryGet("collector", out var storedCount) && storedCount == 3,
+        "collector state arriving before registration retains only the newest absolute count");
+    Check(storageStates.Store("collector", 2, 3) && storageStates.TryGet("collector", out storedCount) && storedCount == 3,
+        "repeated collector snapshots cannot add duplicate plorts");
+    storageStates.Store("other collector", 1, 8);
+    Check(storageStates.TryGet("collector", out storedCount) && storedCount == 3, "different collector IDs retain separate states");
+    storageStates.Clear();
+    Check(!storageStates.TryGet("collector", out _) && storageStates.Store("collector", 1, 1), "changing worlds clears pending storage states and revisions");
+    var stockGate = new AtomicStockGate();
+    var gadgetStock = 1;
+    var spawnedGadgets = 0;
+    var placements = await Task.WhenAll(Enumerable.Range(0, 32).Select(i => Task.Run(() => stockGate.Execute("player-" + i,
+        () => gadgetStock, value => gadgetStock = value, () => { spawnedGadgets++; return true; }))));
+    Check(placements.Count(p => p) == 1 && gadgetStock == 0 && spawnedGadgets == 1, "32 simultaneous placement requests for one gadget produce one winner without negative stock");
+    var winner = Array.FindIndex(placements, value => value);
+    Check(stockGate.Execute("player-" + winner, () => gadgetStock, value => gadgetStock = value, () => { spawnedGadgets++; return true; })
+        && spawnedGadgets == 1, "retransmitted accepted placement is idempotent");
+    stockGate.Clear(); gadgetStock = 1;
+    Check(!stockGate.Execute("failed spawn", () => gadgetStock, value => gadgetStock = value, () => false) && gadgetStock == 1,
+        "failed gadget creation restores reserved stock");
+    var spawnThrew = false;
+    try { stockGate.Execute("exceptional spawn", () => gadgetStock, value => gadgetStock = value, () => throw new IOException("test")); }
+    catch (IOException) { spawnThrew = true; }
+    Check(spawnThrew && gadgetStock == 1, "gadget creation exceptions cannot consume an item");
     var packetTypes = Enum.GetValues<SR2MP.Packets.Utils.PacketType>();
     Check(packetTypes.Distinct().Count() == packetTypes.Length, "packet types including host world rules have unique wire IDs");
     var rules = new WorldRuleState(1, ruleValues);

@@ -586,6 +586,8 @@ internal static class NativeMenu
                 SrLogger.LogMessage($"SMOKE: host={Main.Server.IsRunning}; guest={Main.Client.IsJoined}; role={CoopSaveManager.Role}; actors={ActorManager.ActorTypes.Count}; save={GameContext.Instance.AutoSaveDirector._storageProvider.Cast<FileStorageProvider>().savePath}");
                 break;
             case "rules-smoke": HostWorldRules.SmokeTest(); break;
+            case "storage-smoke": StorageSynchronization.SmokeTest(); break;
+            case "gadget-smoke": HostGadgetPlacement.SmokeTest(); break;
             case "play-selected": root!._models[0].InvokeBehavior(); break;
             case "back": Back(); break;
             case "home": ShowHome(); break;

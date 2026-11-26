@@ -23,14 +23,17 @@ internal sealed class NetworkAmmo : INetObject
 
     public AmmoSlotManager ToGameAmmo()
     {
-        var definitions = AmmoSlots.Values.ToList()
+        var ordered = AmmoSlots.OrderBy(p => p.Key).ToArray();
+        if (ordered.Length > 64 || !ordered.Select(p => p.Key).SequenceEqual(Enumerable.Range(0, ordered.Length)))
+            throw new InvalidDataException("Invalid storage slot indexes.");
+        var definitions = ordered.Select(p => p.Value).ToList()
             .ConvertAll(input => NetworkAmmoManager.GetSlotDefinition(input.SlotDefinition)).ToArray();
         var ammo = new AmmoSlotManager(definitions);
         ammo.InitModel(new AmmoModel(null));
         ammo.SetModel(new AmmoModel(null));
 
         ammo._ammoModel.Slots = new Il2CppReferenceArray<AmmoSlot>(
-            Array.ConvertAll(AmmoSlots.Values.ToArray(), input => input.ToGameAmmoSlot()));
+            Array.ConvertAll(ordered.Select(p => p.Value).ToArray(), input => input.ToGameAmmoSlot()));
 
         return ammo;
     }
@@ -62,7 +65,8 @@ internal struct NetworkAmmoSlot : INetObject
     public readonly AmmoSlot ToGameAmmoSlot() => new()
     {
         _count = Count,
-        _id = ActorManager.ActorTypes[Identifiable],
+        _id = Count == 0 ? null : ActorManager.ActorTypes[Identifiable],
+        Definition = NetworkAmmoManager.GetSlotDefinition(SlotDefinition),
         // _isUnlockedValue = new NullableFloatProperty(1),
         _maxCountValue = new NullableFloatProperty((float)MaxCount),
     };

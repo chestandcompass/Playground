@@ -12,24 +12,12 @@ internal sealed class AmmoAddHandler : BasePacketHandler<AmmoAddPacket>
 {
     protected override bool Handle(AmmoAddPacket packet, IPEndPoint? _)
     {
-        var ammo = NetworkAmmoManager.GetAmmo(packet.ID);
-
-        if (ammo == null) return false;
-
-        if (!ActorManager.ActorTypes.TryGetValue(packet.Identifiable, out var ident) || ident == null)
+        StorageSynchronization.RunHostEdit(packet.ID, ammo =>
         {
-            SrLogger.LogWarning($"AmmoAdd: unknown identifiable type {packet.Identifiable}");
-            return true;
-        }
-        
-        var slotIndex = ammo.GetNextSlot(ident);
-        if (slotIndex == -1)
-            return true;
-
-        HandlingPacket = true;
-        ammo.MaybeAddToSpecificSlot(new AmmoSlot.AmmoMetadata(ident), slotIndex, packet.Count, false);
-        HandlingPacket = false;
-
-        return true;
+            if (packet.Count <= 0 || !ActorManager.ActorTypes.TryGetValue(packet.Identifiable, out var ident) || ident == null) return;
+            var slot = ammo.GetNextSlot(ident);
+            if (slot >= 0) ammo.MaybeAddToSpecificSlot(new AmmoSlot.AmmoMetadata(ident), slot, packet.Count, false);
+        });
+        return false;
     }
 }

@@ -4,6 +4,9 @@ internal enum PacketType : byte
 {   // Type                       // Hierarchy                                    // Frequency                          // Use Case
     None = 0,                     // Both Ways                                    Unused                                Empty packet data, exists for convention purposes and default none value
     WorldRules = 117,             // Host -> guest only: authoritative world settings
+    StorageState = 118,
+    GadgetPlacement = 119,
+    GadgetPlacementResult = 123,
     Connect = 1,                  // Client -> Server                             Low (manual)                          Try to connect to Server
     ConnectionApprove = 2,        // Server -> Client                             Low (depends on connect)              Initiate Player Join
     ConnectionDeny = 3,           // Server -> Client                             Low (can be manual)                   On Connection Deny

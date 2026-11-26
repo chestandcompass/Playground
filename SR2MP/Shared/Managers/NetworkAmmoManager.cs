@@ -32,7 +32,7 @@ internal static class NetworkAmmoManager
 
             var isSlotFull = ammo.Slots[i]!.Count >= ammo.Slots[i]!.MaxCount;
 
-            if (isSlotEmptyOrSameType && isSlotFull) break;
+            if (isSlotEmptyOrSameType && isSlotFull) continue;
 
             if (isSlotEmptyOrSameType)
                 return i;
@@ -67,6 +67,8 @@ internal static class NetworkAmmoManager
     private static readonly Dictionary<IntPtr, (AmmoSlotManager ammo, int index)> slotToAmmo = new();
 
     private static readonly Dictionary<long, AmmoSlotManager> warpDepotAmmoByActorId = new();
+    private static int registryEpoch;
+    internal static void ResetStorageRegistry() => ClearAmmoCache();
 
     public static string? GetPlotID(this AmmoSlotManager ammo) => ammoToID.GetValueOrDefault(ammo.Pointer);
 
@@ -84,26 +86,69 @@ internal static class NetworkAmmoManager
     // public static AmmoSlotManager? GetAmmo(this AmmoSlot slot)
     //     => slotToAmmo.TryGetValue(slot.Pointer, out var ammoTuple) ? ammoTuple.ammo : null;
 
-    public static AmmoSlotManager? GetAmmo(string? id) => IDToAmmo!.GetValueOrDefault(id);
+    public static AmmoSlotManager? GetAmmo(string? id)
+    {
+        if (string.IsNullOrEmpty(id)) return null;
+        IDToAmmo.TryGetValue(id, out var existing);
+        if (!GameHelpers.inGame) return existing;
+        // A host may be in another region: operate on the saved world model even
+        // when that storage's scene object does not exist on this computer.
+        var separator = id.LastIndexOf('_');
+        if (separator <= 0) return existing;
+        var owner = id.Substring(0, separator);
+        var key = id.Substring(separator + 1);
+        Il2CppMonomiPark.SlimeRancher.DataModel.AmmoModel? model = null;
+        if (GameState.landPlots.TryGetValue(owner, out var plot)) plot.siloAmmo.TryGetValue(key, out model);
+        else if (owner.StartsWith("gadget", StringComparison.Ordinal) && long.TryParse(owner.Substring(6), out var actorId)
+            && GameState.TryGetIdentifiableModel(new Il2CppMonomiPark.SlimeRancher.DataModel.ActorId(actorId), out var actor))
+        {
+            var gadget = actor.TryCast<Il2CppMonomiPark.SlimeRancher.DataModel.GadgetModel>();
+            if (gadget != null) model = NetworkGadgetManager.GetAmmoFromGadget(gadget);
+        }
+        if (model == null || (existing?._ammoModel != null && existing._ammoModel.Pointer == model.Pointer)) return existing;
+        var definitions = new List<AmmoSlotDefinition>();
+        for (var i = 0; i < model.Slots.Count; i++)
+        {
+            if (model.Slots[i]?.Definition == null) return existing;
+            definitions.Add(model.Slots[i].Definition);
+        }
+        if (definitions.Count == 0) return existing;
+        var resolved = new AmmoSlotManager(definitions.ToArray());
+        resolved.SetModel(model);
+        resolved.RegisterAmmoPointer(id, key == "warpdepot");
+        return resolved;
+    }
 
     private static void ClearAmmoCache()
     {
+        registryEpoch++;
         ammoToID.Clear();
         IDToAmmo.Clear();
         slotToAmmo.Clear();
         warpDepotAmmoByActorId.Clear();
     }
 
-    private static void RegisterAmmoPointer(this AmmoSlotManager ammo, string id)
+    internal static IEnumerable<KeyValuePair<string, AmmoSlotManager>> RegisteredStorages() => IDToAmmo;
+
+    internal static void RegisterAmmoPointer(this AmmoSlotManager ammo, string id, bool alias = false)
     {
+        if (ammoToID.TryGetValue(ammo.Pointer, out var oldId) && oldId != id
+            && IDToAmmo.TryGetValue(oldId, out var oldBinding) && oldBinding.Pointer == ammo.Pointer) IDToAmmo.Remove(oldId);
+        if (!alias && IDToAmmo.TryGetValue(id, out var previous) && previous.Pointer != ammo.Pointer)
+        {
+            ammoToID.Remove(previous.Pointer);
+            foreach (var slot in slotToAmmo.Where(p => p.Value.ammo.Pointer == previous.Pointer).Select(p => p.Key).ToArray()) slotToAmmo.Remove(slot);
+        }
+        foreach (var slot in slotToAmmo.Where(p => p.Value.ammo.Pointer == ammo.Pointer).Select(p => p.Key).ToArray()) slotToAmmo.Remove(slot);
         ammoToID[ammo.Pointer] = id;
         IDToAmmo[id] = ammo;
 
         for (var i = 0; i < ammo.Slots.Count; i++)
         {
             var slot = ammo.Slots[i];
-            slotToAmmo[slot!.Pointer] = (ammo, i);
+            if (slot != null) slotToAmmo[slot.Pointer] = (ammo, i);
         }
+        StorageSynchronization.OnRegistered(id);
     }
 
     public static void RegisterAmmoPointer(this SiloStorage siloStorage)
@@ -113,7 +158,15 @@ internal static class NetworkAmmoManager
 
     private static IEnumerator RegisterAmmoPointerCoroutine(SiloStorage siloStorage)
     {
-        yield return new WaitFrames(3);
+        var epoch = registryEpoch;
+        // Late scene/model binding is normal. Retry rather than permanently losing
+        // this storage after one early initialization callback.
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            if (siloStorage == null || epoch != registryEpoch) yield break;
+            if (siloStorage.GetRelevantAmmo() != null && siloStorage.AmmoSetReference != null) break;
+            yield return new WaitForSecondsRealtime(.1f);
+        }
         
         if (siloStorage == null) yield break;
 
@@ -137,7 +190,7 @@ internal static class NetworkAmmoManager
 
         if (plot != null)
         {
-            ammo.RegisterAmmoPointer($"{plot._id}_{siloStorage.AmmoSetReference.name}");
+            ammo.RegisterAmmoPointer($"{plot._id}_{siloStorage.AmmoSetReference.Guid}");
             yield break;
         }
 
@@ -157,13 +210,13 @@ internal static class NetworkAmmoManager
                 yield break;
             }
 
-            ammo.RegisterAmmoPointer($"gadget{actorId}_{siloStorage.AmmoSetReference.name}");
+            ammo.RegisterAmmoPointer($"gadget{actorId}_{siloStorage.AmmoSetReference.Guid}");
             yield break;
         }
 
         if (sprinkle != null)
         {
-            ammo.RegisterAmmoPointer($"{sprinkle!.GetComponent<IdHandler>().Id}_{siloStorage.AmmoSetReference.name}");
+            ammo.RegisterAmmoPointer($"{sprinkle!.GetComponent<IdHandler>().Id}_{siloStorage.AmmoSetReference.Guid}");
         }
     }
 
@@ -175,7 +228,7 @@ internal static class NetworkAmmoManager
             ? Math.Min(actorId, partnerId)
             : actorId;
 
-        ammo.RegisterAmmoPointer($"gadget{ammoId}_warpdepot");
+        ammo.RegisterAmmoPointer($"gadget{ammoId}_warpdepot", true);
     }
     
     internal static void OnGadgetLinkResolved(long gadgetId, long partnerId)
@@ -195,13 +248,26 @@ internal static class NetworkAmmoManager
         if (ammoToID.TryGetValue(ammo.Pointer, out var currentId))
         {
             if (currentId == newId) return;
-            IDToAmmo.Remove(currentId);
+            if (IDToAmmo.TryGetValue(currentId, out var mapped) && mapped.Pointer == ammo.Pointer) IDToAmmo.Remove(currentId);
         }
 
-        ammo.RegisterAmmoPointer(newId);
+        ammo.RegisterAmmoPointer(newId, true);
     }
 
-    public static AmmoSlotDefinition GetSlotDefinition(ushort id) => slotDefinitions[id];
+    public static AmmoSlotDefinition GetSlotDefinition(ushort id)
+    {
+        if (!slotDefinitions.ContainsKey(id))
+            foreach (var definition in Resources.FindObjectsOfTypeAll<AmmoSlotDefinition>())
+                slotDefinitions[definition.name.Hash16()] = definition;
+        return slotDefinitions[id];
+    }
+
+    internal static void UnregisterTestStorage(string id)
+    {
+        if (!IDToAmmo.Remove(id, out var ammo)) return;
+        ammoToID.Remove(ammo.Pointer);
+        foreach (var slot in slotToAmmo.Where(p => p.Value.ammo.Pointer == ammo.Pointer).Select(p => p.Key).ToArray()) slotToAmmo.Remove(slot);
+    }
 
     public static ushort GetId(AmmoSlotDefinition def)
     {
