@@ -42,3 +42,8 @@ World rules and storage snapshots are host-authoritative and use revisions. New 
 Preview 18 passed 99 automated assertions and eight native regression checks: legacy profile restoration, preservation of state outside inventory, self-contained reference tables, non-empty inventory round-tripping, corruption rejection, remote model initialization, compass/name initialization, and native menu return after disconnect.
 
 A brief two-computer session confirmed remote character and marker visibility. This does not establish complete multiplayer correctness. Reconnection, concurrent interactions, appearance delivery, imports, deletion, and broader world synchronization require continued testing. Historical checks are recorded in CHANGELOG.md and individual release notes.
+
+## Repository rename compatibility
+
+Preview 19 reads the update feed through immutable GitHub repository ID 1472210540. Release downloads allow only the original and studio account names, with exact HTTPS repository and asset paths. SHA256 validation is retained. Generated manifests deliberately retain the original owner URL so earlier installers can accept the transition release through GitHub redirects. Preview 19 passed 110 automated assertions.
+

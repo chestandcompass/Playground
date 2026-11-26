@@ -33,8 +33,7 @@ namespace PlaygroundSetup
 
     static class Program
     {
-        internal const string Repository = "https://github.com/robertbrania-code/Playground";
-        internal const string Feed = "https://raw.githubusercontent.com/robertbrania-code/Playground/main/update.json";
+        internal const string Feed = PlaygroundUpdates.UpdateRepository.FeedUrl;
 
         [STAThread]
         static int Main(string[] args)
@@ -198,7 +197,7 @@ namespace PlaygroundSetup
             Version parsed;
             if (release == null || release.Schema != 1 || !Version.TryParse(release.Version, out parsed) || release.Build < 1 ||
                 release.GameVersion != "1.3.0" || !Regex.IsMatch(release.Sha256 ?? "", "^[a-fA-F0-9]{64}$") ||
-                !(release.DllUrl ?? "").StartsWith(Repository + "/releases/download/", StringComparison.Ordinal))
+                !PlaygroundUpdates.UpdateRepository.IsReleaseUrl(release.DllUrl, "Playground.dll"))
                 throw new InvalidDataException("This Playground release is not compatible with this installer or game version.");
         }
 
@@ -234,6 +233,7 @@ namespace PlaygroundSetup
                     using (var client = new TimedWebClient())
                     {
                         client.Headers[HttpRequestHeader.UserAgent] = "Playground-Setup/0.1.0";
+                        client.Headers[HttpRequestHeader.Accept] = PlaygroundUpdates.UpdateRepository.MediaType;
                         ReleaseInfo remote = ReadRelease(client.DownloadData(Feed));
                         ValidateRelease(remote);
                         if (new Version(remote.Version) > new Version(release.Version) ||

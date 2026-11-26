@@ -7,8 +7,7 @@ namespace SR2MP.Runtime;
 
 internal static class UpdateManager
 {
-    internal const string FeedUrl = "https://raw.githubusercontent.com/robertbrania-code/Playground/main/update.json";
-    private const string ReleasePrefix = "https://github.com/robertbrania-code/Playground/releases/download/";
+    internal const string FeedUrl = PlaygroundUpdates.UpdateRepository.FeedUrl;
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(60) };
     private static bool busy;
     private static bool scheduled;
@@ -60,13 +59,14 @@ internal static class UpdateManager
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, FeedUrl);
                 request.Headers.UserAgent.ParseAdd("Playground/0.1.0");
+                request.Headers.Accept.ParseAdd(PlaygroundUpdates.UpdateRepository.MediaType);
                 using var response = await Client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsByteArrayAsync();
                 if (json.Length > 65536) throw new InvalidDataException("Update feed is too large.");
                 feed = JsonSerializer.Deserialize<UpdateFeed>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 if (feed == null || feed.Schema != 1 || !Version.TryParse(feed.Version, out var version) || feed.Build < 1 ||
-                    !feed.DllUrl.StartsWith(ReleasePrefix, StringComparison.Ordinal) || feed.Sha256.Length != 64)
+                    !PlaygroundUpdates.UpdateRepository.IsReleaseUrl(feed.DllUrl, "Playground.dll") || feed.Sha256.Length != 64)
                     throw new InvalidDataException("Invalid update feed.");
                 if (!gameVersion.StartsWith(feed.GameVersion + " ", StringComparison.Ordinal) && gameVersion != feed.GameVersion)
                     result = "incompatible";
@@ -97,7 +97,7 @@ internal static class UpdateManager
         {
             try
             {
-                if (!feed.SetupUrl.StartsWith(ReleasePrefix, StringComparison.Ordinal) || feed.SetupSha256.Length != 64 ||
+                if (!PlaygroundUpdates.UpdateRepository.IsReleaseUrl(feed.SetupUrl, "PlaygroundSetup.exe") || feed.SetupSha256.Length != 64 ||
                     feed.SetupSha256.Any(c => !Uri.IsHexDigit(c))) throw new InvalidDataException("Invalid installer update.");
                 var directory = Path.Combine(game, "PlaygroundUpdates", feed.Version + "-" + feed.Build);
                 Directory.CreateDirectory(directory);

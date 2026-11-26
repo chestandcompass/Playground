@@ -9,6 +9,7 @@
   <ItemGroup><Compile Include="../../SR2MP/Shared/Utils/HairColors.cs" Link="HairColors.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../../SR2MP/Shared/Utils/GuestProfileEnvelope.cs" Link="GuestProfileEnvelope.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../../SR2MP/Shared/Utils/SessionState.cs" Link="SessionState.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../SR2MP/Shared/Utils/UpdateRepository.cs" Link="UpdateRepository.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../../SR2MP/Shared/Managers/WorldLabels.cs" Link="WorldLabels.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../../SR2MP/Shared/Utils/WorldRuleState.cs" Link="WorldRuleState.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../../SR2MP/Shared/Utils/LatestStorageState.cs" Link="LatestStorageState.cs" /></ItemGroup>

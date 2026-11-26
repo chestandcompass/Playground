@@ -2,6 +2,11 @@
 
 All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows x64. Full host-and-guest validation on two computers remains pending.
 
+## Preview 19
+
+- Keep automatic updates working through the studio account rename.
+- Preserve compatibility with existing installers.
+
 ## Preview 18
 
 - Fix the guest-profile load translator that could disconnect returning guests before player models and markers were created.
@@ -18,14 +23,14 @@ All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows 
 - Add this English release history and translate the two original Polish release descriptions.
 - Preserve in-game localization and existing gameplay behavior.
 
+<details>
+<summary>Older releases</summary>
+
 ## Preview 16
 
 - Add remembered hair-color selection beside the player name, with a main-menu character preview.
 - Synchronize validated hair colors, retaining original hair as the default and isolating materials from skin and other players.
 - Validation: 90 automated assertions and 40 in-game cosmetic checks passed in one instance. Menu typing and color previews were inspected; two-PC delivery remains unverified.
-
-<details>
-<summary>Older releases</summary>
 
 ## Preview 15
 

@@ -18,6 +18,18 @@ void Check(bool value, string message)
 try
 {
     LanDiscoveryChecks.Run(Check);
+    foreach (var owner in new[] { "robertbrania-code", "chestandcompass" })
+        foreach (var asset in new[] { "Playground.dll", "PlaygroundSetup.exe" })
+            Check(PlaygroundUpdates.UpdateRepository.IsReleaseUrl("https://github.com/" + owner + "/Playground/releases/download/v0.1.0-preview.19/" + asset, asset), "update migration accepts the explicit release owner and asset: " + owner + "/" + asset);
+    foreach (var bad in new[] {
+        "http://github.com/chestandcompass/Playground/releases/download/v1/Playground.dll",
+        "https://github.com.attacker.example/chestandcompass/Playground/releases/download/v1/Playground.dll",
+        "https://github.com/other/Playground/releases/download/v1/Playground.dll",
+        "https://github.com/chestandcompass/Other/releases/download/v1/Playground.dll",
+        "https://github.com/chestandcompass/Playground/releases/download/v1/Other.exe",
+        "https://user@github.com/chestandcompass/Playground/releases/download/v1/Playground.dll",
+        "https://github.com/chestandcompass/Playground/releases/download/v1/Playground.dll?redirect=elsewhere" })
+        Check(!PlaygroundUpdates.UpdateRepository.IsReleaseUrl(bad, "Playground.dll"), "update migration rejects an untrusted release URL: " + bad);
     var guestBytes = GuestProfileEnvelope.Write(new byte[] { 3, 5 }, new byte[] { 9, 2, 7 });
     var guestRead = GuestProfileEnvelope.Read(guestBytes);
     Check(guestRead.references!.SequenceEqual(new byte[] { 3, 5 }) && guestRead.player.SequenceEqual(new byte[] { 9, 2, 7 }), "guest snapshots keep native reference tables and player data together");
