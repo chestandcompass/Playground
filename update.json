@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "version": "0.1.0",
-  "build": 5,
+  "build": 6,
   "gameVersion": "1.3.0",
   "channel": "preview-lan",
-  "dllUrl": "https://github.com/robertbrania-code/Playground/releases/download/v0.1.0-preview.5/Playground.dll",
-  "sha256": "f316dd93589519ae7b2369f3e7aa9fe7f38e0ca46f24e1e0b9f6bbb5424b54d7",
+  "dllUrl": "https://github.com/robertbrania-code/Playground/releases/download/v0.1.0-preview.6/Playground.dll",
+  "sha256": "b98c321eb71bfd1cbd5098f9f8efe7195a5f49bdd4244cab2e231e86aea838cc",
   "gameAssemblySha256": "786006ede0d198f6e15a2c01f90ef9108afe694745fa0ad894e1c3ed342385b7",
-  "setupUrl": "https://github.com/robertbrania-code/Playground/releases/download/v0.1.0-preview.5/PlaygroundSetup.exe",
-  "setupSha256": "88fe22f2cec9d5fceff830d148fffe03605d8f2752a12e93d97c46e2f013ada9"
+  "setupUrl": "https://github.com/robertbrania-code/Playground/releases/download/v0.1.0-preview.6/PlaygroundSetup.exe",
+  "setupSha256": "81198773a3c6e659e062ec617fb04bd43d20d03f62411cde405bae409cab0026"
 }
