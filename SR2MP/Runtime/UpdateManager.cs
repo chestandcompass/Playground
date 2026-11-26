@@ -29,14 +29,14 @@ internal static class UpdateManager
 
     internal static string Caption => state switch
     {
-        "checking" => NativeMenu.Polish ? "Sprawdzam aktualizacje..." : "Checking for updates...",
-        "download" => NativeMenu.Polish ? "Pobieram aktualizację..." : "Downloading update...",
-        "available" => NativeMenu.Polish ? "Zainstaluj aktualizację po wyjściu" : "Update after closing the game",
-        "scheduled" => NativeMenu.Polish ? "Aktualizacja po wyjściu z gry" : "Update scheduled after exit",
-        "latest" => NativeMenu.Polish ? "Masz aktualną wersję" : "You're up to date",
-        "incompatible" => NativeMenu.Polish ? "Aktualizacja wymaga innej wersji gry" : "Update needs a different game version",
-        "error" => NativeMenu.Polish ? "Ponów sprawdzanie aktualizacji" : "Try checking for updates again",
-        _ => NativeMenu.Polish ? "Sprawdź aktualizacje" : "Check for updates"
+        "checking" => "Checking for updates...",
+        "download" => "Downloading update...",
+        "available" => "Update after closing the game",
+        "scheduled" => "Update scheduled after exit",
+        "latest" => "You're up to date",
+        "incompatible" => "Update needs a different game version",
+        "error" => "Try checking for updates again",
+        _ => "Check for updates"
     };
 
     internal static void Activate()

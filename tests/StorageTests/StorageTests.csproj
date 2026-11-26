@@ -2,4 +2,5 @@
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup><Compile Include="../../SR2MP/Shared/Managers/CoopFiles.cs" Link="CoopFiles.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../../SR2MP/Shared/Utils/NetworkEndpoints.cs" Link="NetworkEndpoints.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../SR2MP/Runtime/PlaygroundLocalization.cs" Link="PlaygroundLocalization.cs" /></ItemGroup>
 </Project>

@@ -2,6 +2,7 @@ using SR2MP.Shared.Managers;
 using SR2MP.Shared.Utils;
 using System.Net;
 using System.Net.Sockets;
+using SR2MP.Runtime;
 
 var root = Path.Combine(Path.GetTempPath(), "CompassCoopTests-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
@@ -14,6 +15,14 @@ void Check(bool value, string message)
 }
 try
 {
+    Check(PlaygroundLocalization.Keys.Count() == 34, "all 34 native menu and update messages are in the translation catalog");
+    foreach (var language in PlaygroundLocalization.Languages)
+        Check(PlaygroundLocalization.Keys.All(key => !string.IsNullOrWhiteSpace(PlaygroundLocalization.Translate(language, key))), "complete menu translations: " + language);
+    Check(PlaygroundLocalization.Translate("pt-BR", "Back") == "Voltar", "regional locale selects its language translation");
+    Check(PlaygroundLocalization.Translate("zh-Hans", "Cancel") == "取消", "Simplified Chinese locale uses Chinese translations");
+    Check(PlaygroundLocalization.Translate("unknown", "Back") == "Back", "unknown locale safely falls back to English");
+    Check(PlaygroundLocalization.Translate("ja", "Yes, delete: My Łąka 世界") == "削除する：My Łąka 世界", "localized deletion confirmation preserves the exact world name");
+    Check(PlaygroundLocalization.Translate("fr", "Copy: Back") == "Copier : Back", "world names matching a menu label are not translated");
     using (var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
     using (var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
     {

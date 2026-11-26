@@ -72,15 +72,21 @@ internal static class NativeMenu
     private static bool pendingHost;
     private static bool navigationPending;
     private static int pageRevision;
-    internal static bool Polish => LocalizationSettings.SelectedLocale?.Identifier.Code.StartsWith("pl") == true;
-    private static string L(string pl, string en) => Polish ? pl : en;
 
     internal static LocalizedString Text(LocalizedString template, string text)
     {
         var table = LocalizationSettings.StringDatabase.GetTable(template.TableReference);
         if (table == null) throw new InvalidOperationException("The game's menu localization table is unavailable.");
         var key = "playground." + CoopFiles.Key(text);
-        table.AddEntry(key, text);
+        // Register one stable entry in every locale, so existing native buttons
+        // also update when the player changes language without restarting.
+        table.AddEntry(key, PlaygroundLocalization.Translate(LocalizationSettings.SelectedLocale?.Identifier.Code, text));
+        foreach (var locale in LocalizationSettings.AvailableLocales.Locales)
+        {
+            var localizedTable = LocalizationSettings.StringDatabase.GetTable(template.TableReference, locale);
+            if (localizedTable != null)
+                localizedTable.AddEntry(key, PlaygroundLocalization.Translate(locale.Identifier.Code, text));
+        }
         return new LocalizedString(template.TableReference, key);
     }
 
@@ -98,7 +104,7 @@ internal static class NativeMenu
             if (MenuSmokeTest.Enabled) SrLogger.LogMessage($"Native menu item: {model.Definition.name} / {model.Label.TableEntryReference.Key}");
         }
         if (originals.Count == 0) return;
-        var entry = Item(L("Graj ze znajomym", "Play with a friend"), ShowHome);
+        var entry = Item("Play with a friend", ShowHome);
         menu._models.Insert(Math.Min(1, menu._models.Count), entry);
         SrLogger.LogMessage("Playground: installed native main-menu entry.");
     }
@@ -133,12 +139,12 @@ internal static class NativeMenu
     internal static void ShowHome()
     {
         Page(
-            (L("Utwórz świat", "Create a world"), CreateHost),
-            (L("Moje światy", "My worlds"), ShowWorlds),
-            (L("Skopiuj świat singleplayer", "Copy a singleplayer world"), ShowImportWorlds),
-            (L("Dołącz do znajomego", "Join a friend"), ShowJoin),
+            ("Create a world", CreateHost),
+            ("My worlds", ShowWorlds),
+            ("Copy a singleplayer world", ShowImportWorlds),
+            ("Join a friend", ShowJoin),
             (UpdateManager.Caption, () => { UpdateManager.Activate(); ShowHome(); }),
-            (L("Wróć", "Back"), Back));
+            ("Back", Back));
         homeVisible = true;
     }
 
@@ -172,8 +178,8 @@ internal static class NativeMenu
     }
 
     internal static void ShowError() => Page(
-        (L("Nie udało się. Spróbuj ponownie", "That didn't work. Try again"), ShowHome),
-        (L("Wróć", "Back"), Back));
+        ("That didn't work. Try again", ShowHome),
+        ("Back", Back));
 
     private static ButtonBehaviorModel NewGameButton()
         => originals.FirstOrDefault(m => m.Definition.name.Contains("NewGame", StringComparison.OrdinalIgnoreCase)
@@ -201,32 +207,32 @@ internal static class NativeMenu
             if (save.IsInvalid) continue;
             options.Add((save.DisplayName, () => ShowWorldActions(save)));
         }
-        if (options.Count == 0) options.Add((L("Utwórz pierwszy świat", "Create your first world"), CreateHost));
-        options.Add((L("Wróć", "Back"), ShowHome));
+        if (options.Count == 0) options.Add(("Create your first world", CreateHost));
+        options.Add(("Back", ShowHome));
         Page(options.ToArray());
     }
 
     private static void ShowWorldActions(Il2CppMonomiPark.SlimeRancher.Persist.Summary save) => Page(
-        (L("Graj: ", "Play: ") + save.DisplayName, () =>
+        ("Play: " + save.DisplayName, () =>
         {
             pendingHost = true;
             GameContext.Instance.AutoSaveDirector.BeginLoad(save.SaveIdentifier, null);
         }),
-        (L("Usuń świat multiplayer", "Delete multiplayer world"), () => Page(
+        ("Delete multiplayer world", () => Page(
             // Cancel gets initial keyboard/controller focus. Removing a world always
             // requires a separate submit on the button carrying its actual name.
-            (L("Anuluj", "Cancel"), () => ShowWorldActions(save)),
-            (L("Tak, usuń: ", "Yes, delete: ") + save.DisplayName, () =>
+            ("Cancel", () => ShowWorldActions(save)),
+            ("Yes, delete: " + save.DisplayName, () =>
             {
                 CoopSaveManager.DeleteHostWorld(save.SaveIdentifier.GameName);
                 ShowWorlds();
             }))),
-        (L("Wróć", "Back"), ShowWorlds));
+        ("Back", ShowWorlds));
 
     private static void ShowJoin() => Page(
-        (L("Wklej kod i dołącz", "Paste code and join"), JoinCopiedCode),
-        (L("Skąd wziąć kod?", "How do I get a code?"), ShowJoinHelp),
-        (L("Wróć", "Back"), ShowHome));
+        ("Paste code and join", JoinCopiedCode),
+        ("How do I get a code?", ShowJoinHelp),
+        ("Back", ShowHome));
 
     private static void ShowImportWorlds()
     {
@@ -240,35 +246,35 @@ internal static class NativeMenu
             if (latest == null) continue;
             var selected = latest;
             options.Add((selected.DisplayName, () => Page(
-                (L("Skopiuj: ", "Copy: ") + selected.DisplayName, () =>
+                ("Copy: " + selected.DisplayName, () =>
                 {
                     var copied = CoopSaveManager.ImportSingleplayer(selected);
-                    Page((copied ? L("Gotowe! Otwórz Moje światy", "Copied! Open My worlds")
-                        : L("Ten świat ma już kopię multiplayer", "This world already has a multiplayer copy"), ShowWorlds),
-                        (L("Wróć", "Back"), ShowHome));
+                    Page((copied ? "Copied! Open My worlds"
+                        : "This world already has a multiplayer copy", ShowWorlds),
+                        ("Back", ShowHome));
                 }),
-                (L("Oryginał pozostaje bez zmian — wróć", "Original stays unchanged — go back"), ShowImportWorlds))));
+                ("Original stays unchanged — go back", ShowImportWorlds))));
         }
         if (options.Count == 0)
-            options.Add((L("Brak zapisów singleplayer", "No singleplayer saves found"), ShowHome));
-        options.Add((L("Wróć", "Back"), ShowHome));
+            options.Add(("No singleplayer saves found", ShowHome));
+        options.Add(("Back", ShowHome));
         Page(options.ToArray());
     }
 
     private static void ShowJoinHelp() => Page(
-        (L("Host: pauza → Skopiuj kod zaproszenia", "Host: pause → Copy invitation code"), ShowJoinHelp),
-        (L("Skopiuj otrzymany kod (Ctrl+C)", "Copy the received code (Ctrl+C)"), ShowJoinHelp),
-        (L("Wklej kod i dołącz (ta sama sieć Wi-Fi/LAN)", "Paste code and join (same Wi-Fi/LAN)"), JoinCopiedCode),
-        (L("Wróć", "Back"), ShowJoin));
+        ("Host: pause → Copy invitation code", ShowJoinHelp),
+        ("Copy the received code (Ctrl+C)", ShowJoinHelp),
+        ("Paste code and join (same Wi-Fi/LAN)", JoinCopiedCode),
+        ("Back", ShowJoin));
 
     private static void JoinCopiedCode()
     {
         var code = GUIUtility.systemCopyBuffer.Trim();
         if (!JoinCode.TryDecode(code, out _, out _, out _))
         {
-            Page((L("Brak poprawnego kodu — skopiuj go (Ctrl+C)", "No valid code — copy it first (Ctrl+C)"), ShowJoinHelp),
-                (L("Wklej ponownie i dołącz", "Paste again and join"), JoinCopiedCode),
-                (L("Wróć", "Back"), ShowJoin));
+            Page(("No valid code — copy it first (Ctrl+C)", ShowJoinHelp),
+                ("Paste again and join", JoinCopiedCode),
+                ("Back", ShowJoin));
             return;
         }
         CoopSaveManager.SelectRole("guest");
@@ -377,8 +383,8 @@ internal static class NativeMenu
     internal static void AddPause(PauseMenuRoot pause)
     {
         if (!CoopSaveManager.Enabled || pause._pausedItems.Count == 0) return;
-        var caption = Main.Server.IsRunning ? L("Skopiuj kod zaproszenia", "Copy invitation code")
-            : L("Zapisz i rozłącz", "Save and disconnect");
+        var caption = Main.Server.IsRunning ? "Copy invitation code"
+            : "Save and disconnect";
         var item = new PlaygroundPauseItem(pause._pausedItems[0].Label, caption, () =>
         {
             if (Main.Server.IsRunning)

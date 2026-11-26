@@ -48,3 +48,7 @@ W menu Playground wybierz **Skopiuj swiat singleplayer / Copy a singleplayer wor
 ## Usuwanie swiata multiplayer
 **Moje swiaty → wybierz swiat → Usun swiat multiplayer** otwiera potwierdzenie z nazwa swiata. Domyslnie zaznaczone jest **Anuluj**. Usuwanie obejmuje zapisy wybranego swiata hosta; oryginal singleplayer i lokalne profile gosci pozostaja. Przebieg usuwania przez natywne menu wymaga jeszcze sprawdzenia w grze.
 
+
+## Jezyki menu Playground
+Menu, pomoc, pauza, potwierdzenia i komunikaty aktualizacji uzywaja jezyka wybranego w grze: en, de, fr, es, pt, ru, ja, ko, zh (uproszczony). Zachowano rowniez polskie tlumaczenia na wypadek dostepnego locale pl; Playground nie dodaje polskiego jezyka do samej gry. Nieznany jezyk korzysta z angielskiego. Nazwy swiatow nie sa tlumaczone. 34 teksty sprawdzono automatycznie dla wszystkich 10 katalogow; wyglad, dlugosc tekstow i zmiana jezyka na zywo wymagaja jeszcze kontroli w grze. Instalator pozostaje po polsku.
+
