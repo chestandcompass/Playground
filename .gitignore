@@ -7,3 +7,6 @@ dist/
 *.dll
 *.exe
 *.log
+
+!SR2MP/Runtime/
+!SR2MP/Runtime/*.cs
