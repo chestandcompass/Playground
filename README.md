@@ -8,7 +8,7 @@ Explore with a friend using the game's familiar menus, separate multiplayer worl
 
 ## Download and install
 
-Download **PlaygroundSetup.exe** from the [releases page](https://github.com/robertbrania-code/Playground/releases) and run it.
+Download **PlaygroundSetup.exe** from the [releases page](https://github.com/chestandcompass/Playground/releases) and run it.
 
 The installer finds the game and installs the required components. If it cannot find your installation, select SlimeRancher2.exe when prompted.
 
