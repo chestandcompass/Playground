@@ -1,0 +1,175 @@
+using System.Collections;
+using Il2CppTMPro;
+using Il2CppMonomiPark.SlimeRancher.UI.MainMenu;
+using SR2MP.Shared.Managers;
+using SR2MP.Shared.Utils;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.Localization.Settings;
+using UnityEngine.UI;
+
+namespace SR2MP.Runtime;
+
+internal static class PlayerNameEntry
+{
+    private static GameObject? editor, header;
+    private static TMP_InputField? input;
+    private static TMP_Text? nativeLabel;
+    private static Action? confirm, cancel;
+    private static int generation;
+    internal static bool IsOpen { get; private set; }
+    private static string L(string text) => PlaygroundLocalization.Translate(LocalizationSettings.SelectedLocale?.Identifier.Code, text);
+
+    internal static void Open(Action accepted, Action cancelled)
+    {
+        Close();
+        IsOpen = true;
+        confirm = accepted; cancel = cancelled;
+        var revision = generation;
+        MelonLoader.MelonCoroutines.Start(Build());
+        IEnumerator Build()
+        {
+            yield return null; // The native list must finish binding its three rows.
+            if (!IsOpen || revision != generation) yield break;
+            var key = "playground." + CoopFiles.Key("Your name");
+            var button = Resources.FindObjectsOfTypeAll<MainMenuButton>().FirstOrDefault(b => b.gameObject.activeInHierarchy
+                && b._label.StringReference.TableEntryReference.Key == key);
+            if (button == null) { Close(); NativeMenu.ShowError(); yield break; }
+            nativeLabel = button._label.GetComponent<TMP_Text>() ?? button._label.GetComponentInChildren<TMP_Text>(true);
+            if (nativeLabel == null) { Close(); NativeMenu.ShowError(); yield break; }
+            editor = new GameObject("Playground player name input");
+            editor.transform.SetParent(button.transform, false);
+            var background = editor.AddComponent<Image>();
+            background.color = Color.clear;
+            var rect = editor.transform.Cast<RectTransform>();
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(88, 8); rect.offsetMax = new Vector2(-85, -8);
+            input = editor.AddComponent<TMP_InputField>();
+            input.targetGraphic = background;
+            input.transition = Selectable.Transition.None;
+            input.lineType = TMP_InputField.LineType.SingleLine;
+            input.characterLimit = PlayerNames.MaxCharacters;
+            input.richText = false;
+            var viewport = new GameObject("Text viewport");
+            viewport.transform.SetParent(editor.transform, false);
+            viewport.AddComponent<RectMask2D>();
+            Stretch(viewport.transform.Cast<RectTransform>());
+            input.textViewport = viewport.transform.Cast<RectTransform>();
+            var text = Label("Name text", viewport.transform, nativeLabel);
+            text.richText = false;
+            input.textComponent = text;
+            input.onSubmit.AddListener(new Action<string>(_ => Submit()));
+            var placeholder = Label("Name placeholder", viewport.transform, nativeLabel);
+            placeholder.text = L("Enter your name");
+            placeholder.color = new Color(1, 1, 1, 0.65f);
+            input.placeholder = placeholder;
+            input.text = Main.HasPlayerName ? Main.RawUsername : "";
+            var title = Label("Name heading", button.transform, nativeLabel);
+            header = title.gameObject;
+            title.text = L("Your name");
+            title.fontSize = 26;
+            var titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0, 1); titleRect.anchorMax = new Vector2(1, 1);
+            titleRect.offsetMin = new Vector2(24, 8); titleRect.offsetMax = new Vector2(-24, 48);
+            nativeLabel.enabled = false;
+            input.ForceLabelUpdate();
+            Focus();
+        }
+    }
+
+    private static TextMeshProUGUI Label(string name, Transform parent, TMP_Text template)
+    {
+        var obj = new GameObject(name);
+        obj.transform.SetParent(parent, false);
+        var label = obj.AddComponent<TextMeshProUGUI>();
+        PlayerNameFonts.Ensure(template.font);
+        label.font = template.font; label.fontSharedMaterial = template.fontSharedMaterial;
+        label.fontSize = 36; label.color = Color.white;
+        label.alignment = TextAlignmentOptions.MidlineLeft;
+        label.enableWordWrapping = false;
+        label.raycastTarget = false;
+        Stretch(label.rectTransform);
+        return label;
+    }
+
+    private static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+    }
+
+    internal static void Focus()
+    {
+        if (input == null) return;
+        EventSystem.current?.SetSelectedGameObject(input.gameObject);
+        input.ActivateInputField();
+    }
+
+    internal static bool Save()
+    {
+        if (input == null) return false;
+        var name = PlayerNames.Normalize(input.text);
+        if (name.Length == 0) { Focus(); return false; }
+        Main.SetPlayerName(name);
+        Close();
+        return true;
+    }
+
+    internal static void Cancel()
+    {
+        var action = cancel;
+        Close();
+        action?.Invoke();
+    }
+
+    internal static void Update()
+    {
+        if (!IsOpen || input == null) return;
+        // Measure the field's actual caption (or placeholder) with the existing
+        // native button fitter, so this pill also grows to fit its content.
+        if (nativeLabel != null) nativeLabel.text = input.text.Length == 0 ? L("Enter your name") : PlayerNames.Normalize(input.text);
+        var keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) { NativeMenu.Navigate(Cancel); return; }
+        if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
+        { Submit(); return; }
+        if (!input.isFocused) Focus();
+    }
+
+    private static void Submit()
+    {
+        if (!IsOpen) return;
+        var action = confirm;
+        NativeMenu.Navigate(() => action?.Invoke());
+    }
+
+    internal static void Close()
+    {
+        IsOpen = false; generation++;
+        if (input != null) input.DeactivateInputField();
+        if (nativeLabel != null) nativeLabel.enabled = true;
+        if (editor != null) Object.Destroy(editor);
+        if (header != null) Object.Destroy(header);
+        editor = header = null; input = null; nativeLabel = null;
+        confirm = cancel = null;
+    }
+
+    internal static void TestText(string text)
+    {
+        if (!MenuSmokeTest.Enabled || input == null) return;
+        input.text = text;
+        input.ForceLabelUpdate();
+    }
+
+    internal static void TestConfirm()
+    {
+        if (!MenuSmokeTest.Enabled || !IsOpen) return;
+        var action = confirm;
+        NativeMenu.Navigate(() => action?.Invoke());
+    }
+}
+
+[HarmonyLib.HarmonyPatch(typeof(MainMenuLandingRootUI), nameof(MainMenuLandingRootUI.UnityEngine_EventSystems_ISubmitHandler_OnSubmit))]
+internal static class NameEntrySubmitPatch
+{
+    internal static bool Prefix() => !PlayerNameEntry.IsOpen;
+}

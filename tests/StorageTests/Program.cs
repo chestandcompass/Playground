@@ -36,7 +36,14 @@ try
     Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot, steamRoot }, new[] { externalGame }).Length == 1, "duplicate Steam registry roots do not trigger a manual selection");
     File.Delete(Path.Combine(externalGame, "GameAssembly.dll"));
     Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot }, new[] { externalGame }).Length == 0, "incomplete game installs are not selected automatically");
-    Check(PlaygroundLocalization.Keys.Count() == 42, "all 42 native menu, LAN and update messages are in the translation catalog");
+    Check(PlayerNames.Normalize("  Ola   Łąka ") == "Ola Łąka", "player names preserve diacritics and normalize spacing");
+    Check(PlayerNames.Normalize("e\u0301") == "é", "player names normalize combining accents without losing characters");
+    Check(PlayerNames.Normalize(new string('a', 40)).Length == 24, "player names have a bounded display length");
+    Check(PlayerNames.Normalize("\n\t\u202e") == "", "empty and control-only player names cannot pass confirmation");
+    Check(PlayerNames.Normalize("<b>Ola</b>") == "＜b＞Ola＜/b＞", "player names cannot inject rich text into labels");
+    Check(PlayerNames.SanitizeWire("<color=#FFFFFF>Ola</color>") == "<color=#FFFFFF>Ola</color>", "network names preserve only the existing valid color wrapper");
+    Check(PlayerNames.SanitizeWire("<color=#FFFFFF><size=99>Ola</size></color>").Contains("＜size=99＞"), "nested network name markup is rendered as plain text");
+    Check(PlaygroundLocalization.Keys.Count() == 45, "all 45 native menu, player name, LAN and update messages are in the translation catalog");
     foreach (var language in PlaygroundLocalization.Languages)
         Check(PlaygroundLocalization.Keys.All(key => !string.IsNullOrWhiteSpace(PlaygroundLocalization.Translate(language, key))), "complete menu translations: " + language);
     Check(PlaygroundLocalization.Translate("pt-BR", "Back") == "Voltar", "regional locale selects its language translation");

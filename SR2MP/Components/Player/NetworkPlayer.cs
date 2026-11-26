@@ -65,6 +65,7 @@ internal partial class NetworkPlayer : MonoBehaviour
         UsernamePanel.alignment = TextAlignmentOptions.Center;
         UsernamePanel.fontSize = 3;
         UsernamePanel.font = GetFont("Runsell Type - HemispheresCaps2 (Latin)");
+        SR2MP.Runtime.PlayerNameFonts.Ensure(UsernamePanel.font);
         usernameFont = UsernamePanel.font;
 
         if (!UsernamePanel.GetComponent<TransformLookAtCamera>())

@@ -77,6 +77,8 @@ internal static class NativeMenu
     private static bool lanVisible, lanRefreshPending;
     private static int lanOffset;
     private static string lanSignature = "";
+    private static string? smokeOriginalName;
+    private static bool smokeOriginalConfirmed;
     private static readonly Dictionary<string, string> localizedSources = new();
 
     internal static LocalizedString Text(LocalizedString template, string text)
@@ -143,6 +145,7 @@ internal static class NativeMenu
     private static void Page(params (string text, Action action)[] options)
     {
         if (root == null) return;
+        PlayerNameEntry.Close();
         homeVisible = false;
         customPage = true;
         lanVisible = false;
@@ -209,6 +212,19 @@ internal static class NativeMenu
                 .First(d => d.name == "BeginNewGameDisplay").CreateButtonBehaviorModel();
 
     private static void CreateHost()
+        => AskPlayerName(CreateHostWithName, ShowHome);
+
+    private static void AskPlayerName(Action continueAction, Action backAction)
+    {
+        void Confirm()
+        {
+            if (PlayerNameEntry.Save()) continueAction();
+        }
+        Page(("Your name", PlayerNameEntry.Focus), ("Continue", Confirm), ("Back", PlayerNameEntry.Cancel));
+        PlayerNameEntry.Open(Confirm, backAction);
+    }
+
+    private static void CreateHostWithName()
     {
         CoopSaveManager.SelectRole("host");
         pendingHost = true;
@@ -234,11 +250,11 @@ internal static class NativeMenu
     }
 
     private static void ShowWorldActions(Il2CppMonomiPark.SlimeRancher.Persist.Summary save) => Page(
-        ("Play: " + save.DisplayName, () =>
+        ("Play: " + save.DisplayName, () => AskPlayerName(() =>
         {
             pendingHost = true;
             GameContext.Instance.AutoSaveDirector.BeginLoad(save.SaveIdentifier, null);
-        }),
+        }, () => ShowWorldActions(save))),
         ("Delete multiplayer world", () => Page(
             // Cancel gets initial keyboard/controller focus. Removing a world always
             // requires a separate submit on the button carrying its actual name.
@@ -358,6 +374,9 @@ internal static class NativeMenu
     }
 
     private static void StartJoin(string code)
+        => AskPlayerName(() => StartJoinWithName(code), ShowJoin);
+
+    private static void StartJoinWithName(string code)
     {
         if (joinLoading) return;
         lanVisible = false;
@@ -475,6 +494,7 @@ internal static class NativeMenu
 
     internal static bool HandleCancel()
     {
+        if (PlayerNameEntry.IsOpen) { Navigate(PlayerNameEntry.Cancel); return false; }
         if (joinLoading) return false;
         if (!customPage) return true;
         Navigate(Back);
@@ -497,6 +517,18 @@ internal static class NativeMenu
             case "join": ShowJoin(); break;
             case "lan": ShowLanGames(); break;
             case "join-smoke": StartJoin(JoinCode.Encode(IPAddress.Parse("127.0.0.2"), 1919)); break;
+            case "name":
+                smokeOriginalName ??= Main.RawUsername;
+                if (smokeOriginalName == Main.RawUsername) smokeOriginalConfirmed = Main.HasPlayerName;
+                AskPlayerName(ShowHome, ShowHome);
+                break;
+            case "name-type": PlayerNameEntry.TestText("Ola Łąka"); break;
+            case "name-confirm": PlayerNameEntry.TestConfirm(); break;
+            case "name-cancel": PlayerNameEntry.Cancel(); break;
+            case "name-status": SrLogger.LogMessage($"SMOKE NAME: {Main.RawUsername}; confirmed={Main.HasPlayerName}"); break;
+            case "name-restore":
+                if (smokeOriginalName != null) Main.SetPlayerName(smokeOriginalName, smokeOriginalConfirmed);
+                break;
             case "import": ShowImportWorlds(); break;
             case "join-paste": JoinCopiedCode(); break;
             case "join-help": ShowJoinHelp(); break;

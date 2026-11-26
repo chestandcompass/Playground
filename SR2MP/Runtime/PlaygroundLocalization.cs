@@ -76,5 +76,8 @@ LAN search unavailable — try again|Wyszukiwanie LAN niedostępne — ponów|LA
 Next games|Kolejne gry|Weitere Spiele|Parties suivantes|Más partidas|Próximos jogos|Другие игры|次のゲーム|다음 게임|更多游戏
 Refresh LAN games|Odśwież gry w LAN|LAN-Spiele aktualisieren|Actualiser les parties LAN|Actualizar partidas LAN|Atualizar jogos locais|Обновить список игр|LANのゲームを更新|LAN 게임 새로고침|刷新局域网游戏
 Join: |Dołącz: |Beitreten: |Rejoindre : |Unirse: |Entrar: |Войти: |参加：|참가: |加入：
-Joining...|Dołączanie...|Verbindung wird hergestellt...|Connexion en cours...|Uniéndose...|Entrando...|Подключение...|参加中...|참가 중...|正在加入……";
+Joining...|Dołączanie...|Verbindung wird hergestellt...|Connexion en cours...|Uniéndose...|Entrando...|Подключение...|参加中...|참가 중...|正在加入……
+Your name|Twoje imię|Dein Name|Ton nom|Tu nombre|Seu nome|Твоё имя|あなたの名前|내 이름|你的名字
+Enter your name|Wpisz swoje imię|Gib deinen Namen ein|Entre ton nom|Escribe tu nombre|Digite seu nome|Введи своё имя|名前を入力|이름을 입력하세요|请输入名字
+Continue|Dalej|Weiter|Continuer|Continuar|Continuar|Продолжить|次へ|계속|继续";
 }

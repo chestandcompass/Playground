@@ -12,6 +12,8 @@ internal abstract class BasePlayerJoinHandler : BasePacketHandler<PlayerJoinPack
 {
     protected static void InstantiatePlayer(PlayerJoinPacket packet)
     {
+        packet.PlayerName = SR2MP.Shared.Utils.PlayerNames.SanitizeWire(packet.PlayerName);
+        if (string.IsNullOrWhiteSpace(packet.PlayerName)) packet.PlayerName = "Player";
         var playerObject = Object.Instantiate(PlayerPrefab).GetComponent<NetworkPlayer>();
         playerObject.gameObject.SetActive(true);
         playerObject.ID = packet.PlayerId;

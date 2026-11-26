@@ -68,3 +68,8 @@ Wyszukiwanie uzywa broadcastu UDP 19190 i odpowiedzi hosta w sieci lokalnej; pol
 ## Pierwsze dolaczenie goscia
 Od preview 10 dolaczanie z LAN lub kodu nie otwiera ustawien nowego swiata. Playground sam przygotowuje lokalny staging w katalogu goscia, automatycznie przechodzi prolog i pokazuje **Joining...**. Gotowy staging jest zapisywany i wykorzystywany przy kolejnych dolaczeniach. Ustawienia tworzenia swiata hosta pozostaja dostepne tylko dla hosta.
 
+
+## Imie gracza
+Przed utworzeniem/otwarciem swiata hosta oraz dolaczeniem z LAN/kodu pojawia sie pole **Your name / Twoje imie** z natywnymi przyciskami Dalej/Wroc. Wpisana i zatwierdzona nazwa jest zapamietywana lokalnie w preferencjach Playground i podpowiadana przy nastepnym razie. Enter zatwierdza, Escape anuluje. Puste imie nie przechodzi dalej, dlugosc jest ograniczona do 24 znakow. Imie trafia do istniejacych nazw nad postaciami i znacznikow; identyfikator gracza i przypisanie zapisow nie zmieniaja sie.
+Pole dopasowuje sie do tresci. Brakujace znaki polskie sa renderowane przez dynamiczny fallback z systemowej czcionki Windows; pliki fontow nie sa dystrybuowane. Klawiature, Enter, przycisk Dalej, polskie znaki, zapamietywanie i anulowanie sprawdzono w grze. Pelna sesja dwoch PC z nowymi nazwami nie byla jeszcze sprawdzona.
+

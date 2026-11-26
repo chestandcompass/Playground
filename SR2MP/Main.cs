@@ -44,7 +44,18 @@ public sealed class Main : MelonMod
     /// <summary>
     /// Gets the local player's username string from preferences.
     /// </summary>
-    public static string RawUsername => preferences.GetEntry<string>("username").Value;
+    public static string RawUsername => PlayerNames.Normalize(preferences.GetEntry<string>("username").Value);
+    internal static bool HasPlayerName => preferences.GetEntry<bool>("player_name_set").Value
+        || (RawUsername.Length > 0 && RawUsername != "Player");
+
+    internal static void SetPlayerName(string name, bool confirmed = true)
+    {
+        name = PlayerNames.Normalize(name);
+        if (name.Length == 0) throw new ArgumentException("A player name is required.");
+        preferences.GetEntry<string>("username").Value = name;
+        preferences.GetEntry<bool>("player_name_set").Value = confirmed;
+        preferences.SaveToFile();
+    }
 
     /// <summary>
     /// Gets the local player's username color as hex.
@@ -108,6 +119,7 @@ public sealed class Main : MelonMod
         }
         preferences = MelonPreferences.CreateCategory("SR2MP");
         preferences.CreateEntry("username", "Player", is_hidden: true);
+        preferences.CreateEntry("player_name_set", false, is_hidden: true);
         preferences.CreateEntry("username_color", "FFFFFF", is_hidden: true);
         preferences.CreateEntry("allow_cheats", false, is_hidden: true);
         preferences.CreateEntry("streamer_mode", false, display_name: "Streamer Mode");
@@ -203,6 +215,7 @@ public sealed class Main : MelonMod
     {
         LanDiscovery.Update();
         NativeMenu.UpdateLanBrowser();
+        PlayerNameEntry.Update();
         MenuSmokeTest.Update();
     }
 
