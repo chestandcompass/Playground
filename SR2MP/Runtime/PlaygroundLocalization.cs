@@ -14,6 +14,9 @@ internal static class PlaygroundLocalization
         var index = Array.IndexOf(Languages, language);
         if (index < 0) index = 0;
         if (Messages.TryGetValue(source, out var values)) return values[index];
+        const string hairPrefix = "Hair color: ";
+        if (source.StartsWith(hairPrefix, StringComparison.Ordinal))
+            return Translate(locale, "Hair color") + ": " + Translate(locale, source.Substring(hairPrefix.Length));
         // The world name is user data, and must never be translated or replaced.
         foreach (var entry in Messages)
             if (entry.Key.EndsWith(": ", StringComparison.Ordinal) && source.StartsWith(entry.Key, StringComparison.Ordinal))
@@ -36,6 +39,14 @@ internal static class PlaygroundLocalization
 
     // Columns: en | pl | de | fr | es | pt | ru | ja | ko | zh (Simplified).
     private const string Translations = @"Play with a friend|Graj ze znajomym|Mit Freunden spielen|Jouer avec un ami|Jugar con un amigo|Jogar com um amigo|Играть с другом|フレンドと遊ぶ|친구와 플레이|与好友游玩
+Hair color|Kolor włosów|Haarfarbe|Couleur des cheveux|Color de pelo|Cor do cabelo|Цвет волос|髪の色|머리 색|头发颜色
+Original|Oryginalny|Original|Originale|Original|Original|Оригинальный|オリジナル|기본|原始
+Blond|Blond|Blond|Blond|Rubio|Loiro|Блонд|金髪|금발|金色
+Brown|Brązowy|Braun|Brun|Castaño|Castanho|Каштановый|茶色|갈색|棕色
+Black|Czarny|Schwarz|Noir|Negro|Preto|Чёрный|黒|검정|黑色
+Ginger|Rudy|Rot|Roux|Pelirrojo|Ruivo|Рыжий|赤茶色|적갈색|赤褐色
+Pink|Różowy|Rosa|Rose|Rosa|Rosa|Розовый|ピンク|분홍|粉色
+Purple|Fioletowy|Violett|Violet|Morado|Roxo|Фиолетовый|紫|보라|紫色
 Create a world|Utwórz świat|Welt erstellen|Créer un monde|Crear un mundo|Criar um mundo|Создать мир|ワールドを作成|월드 만들기|创建世界
 My worlds|Moje światy|Meine Welten|Mes mondes|Mis mundos|Meus mundos|Мои миры|マイワールド|내 월드|我的世界
 Controlled by the host|Ustawia host|Vom Host festgelegt|Contrôlé par l’hôte|Controlado por el anfitrión|Controlado pelo anfitrião|Настраивает хост|ホストが設定します|호스트가 설정합니다|由房主控制

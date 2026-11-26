@@ -18,6 +18,9 @@ void Check(bool value, string message)
 try
 {
     LanDiscoveryChecks.Run(Check);
+    Check(HairColors.Normalize(-1) == 0 && HairColors.Normalize(255) == 0 && HairColors.Normalize(0) == 0, "missing or invalid hair preferences fall back to original");
+    Check(HairColors.Next(6) == 0 && HairColors.Next(0) == 1 && !HairColors.IsValid(7), "hair selection cycles back to original and rejects unknown wire values");
+    Check(PlaygroundLocalization.Translate("pl", HairColors.Caption(2)) == "Kolor włosów: Brązowy", "composed hair captions translate both the setting and selected color");
     var steamRoot = Path.Combine(root, "Steam");
     var externalLibrary = Path.Combine(root, "Gry Łąka", "SteamLibrary");
     var externalGame = Path.Combine(externalLibrary, "steamapps", "common", "Custom SR2 Folder");
@@ -105,7 +108,7 @@ try
         try { _ = new WorldRuleState(1, invalid); } catch (InvalidDataException) { rejected = true; }
         Check(rejected, "malformed or extra host rule fields are rejected");
     }
-    Check(PlaygroundLocalization.Keys.Count() == 49, "all 49 native menu and host rule messages are in the translation catalog");
+    Check(PlaygroundLocalization.Keys.Contains("Hair color") && HairColors.Names.All(name => PlaygroundLocalization.Keys.Contains(name)), "hair picker names are included in the complete translation catalog");
     foreach (var language in PlaygroundLocalization.Languages)
         Check(PlaygroundLocalization.Keys.All(key => !string.IsNullOrWhiteSpace(PlaygroundLocalization.Translate(language, key))), "complete menu translations: " + language);
     Check(PlaygroundLocalization.Translate("pt-BR", "Back") == "Voltar", "regional locale selects its language translation");

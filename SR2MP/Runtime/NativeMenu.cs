@@ -33,6 +33,13 @@ public sealed class PlaygroundMenuItem : ButtonBehaviorModel
         action = onClick;
     }
     public override LocalizedString Label => caption;
+    [HideFromIl2Cpp]
+    internal void SetCaption(string text)
+    {
+        var updated = NativeMenu.Text(caption, text);
+        caption.TableEntryReference = updated.TableEntryReference;
+        caption.RefreshString();
+    }
     public override void InvokeBehavior()
     {
         NativeMenu.Navigate(action);
@@ -220,8 +227,15 @@ internal static class NativeMenu
         {
             if (PlayerNameEntry.Save()) continueAction();
         }
-        Page(("Your name", PlayerNameEntry.Focus), ("Continue", Confirm), ("Back", PlayerNameEntry.Cancel));
+        Page(("Your name", PlayerNameEntry.Focus), (HairColors.Caption(Main.HairColor), PlayerNameEntry.CycleHair),
+            ("Continue", Confirm), ("Back", PlayerNameEntry.Cancel));
         PlayerNameEntry.Open(Confirm, backAction);
+    }
+
+    internal static void RefreshHairCaption(int choice)
+    {
+        if (root != null && root._models.Count == 4)
+            root._models[1].Cast<PlaygroundMenuItem>().SetCaption(HairColors.Caption(choice));
     }
 
     private static void CreateHostWithName()
@@ -589,6 +603,7 @@ internal static class NativeMenu
             case "storage-smoke": StorageSynchronization.SmokeTest(); break;
             case "gadget-smoke": HostGadgetPlacement.SmokeTest(); break;
             case "cosmetics-smoke": PlayerCosmetics.SmokeTest(); break;
+            case "hair-smoke": PlayerHair.SmokeTest(); break;
             case "play-selected": root!._models[0].InvokeBehavior(); break;
             case "back": Back(); break;
             case "home": ShowHome(); break;

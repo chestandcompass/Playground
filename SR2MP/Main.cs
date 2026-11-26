@@ -45,6 +45,8 @@ public sealed class Main : MelonMod
     /// Gets the local player's username string from preferences.
     /// </summary>
     public static string RawUsername => PlayerNames.Normalize(preferences.GetEntry<string>("username").Value);
+    internal static byte HairColor => SR2MP.Shared.Utils.HairColors.Normalize(preferences.GetEntry<int>("hair_color").Value);
+    internal static void SetHairColor(int choice) => SetConfigValue("hair_color", (int)SR2MP.Shared.Utils.HairColors.Normalize(choice));
     internal static bool HasPlayerName => preferences.GetEntry<bool>("player_name_set").Value
         || (RawUsername.Length > 0 && RawUsername != "Player");
 
@@ -120,6 +122,7 @@ public sealed class Main : MelonMod
         preferences = MelonPreferences.CreateCategory("SR2MP");
         preferences.CreateEntry("username", "Player", is_hidden: true);
         preferences.CreateEntry("player_name_set", false, is_hidden: true);
+        preferences.CreateEntry("hair_color", 0, is_hidden: true);
         preferences.CreateEntry("username_color", "FFFFFF", is_hidden: true);
         preferences.CreateEntry("allow_cheats", false, is_hidden: true);
         preferences.CreateEntry("streamer_mode", false, display_name: "Streamer Mode");

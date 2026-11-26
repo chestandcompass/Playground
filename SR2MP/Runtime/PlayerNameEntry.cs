@@ -19,6 +19,9 @@ internal static class PlayerNameEntry
     private static int generation;
     private static string heading = "Your name", hint = "Enter your name";
     private static int maximumLength = PlayerNames.MaxCharacters;
+    private static byte pendingHair;
+    private static bool appearance;
+    private static GameObject? appearancePreview;
     internal static bool IsOpen { get; private set; }
     private static string L(string text) => PlaygroundLocalization.Translate(LocalizationSettings.SelectedLocale?.Identifier.Code, text);
 
@@ -32,6 +35,13 @@ internal static class PlayerNameEntry
     {
         Close();
         heading = titleKey; hint = hintKey; maximumLength = limit;
+        appearance = titleKey == "Your name";
+        pendingHair = Main.HairColor;
+        if (appearance)
+        {
+            appearancePreview = GameObject.Find("BeatrixMainMenu");
+            if (appearancePreview != null) PlayerHair.Apply(appearancePreview, pendingHair);
+        }
         IsOpen = true;
         confirm = accepted; cancel = cancelled;
         var revision = generation;
@@ -67,7 +77,13 @@ internal static class PlayerNameEntry
             var text = Label("Name text", viewport.transform, nativeLabel);
             text.richText = false;
             input.textComponent = text;
-            input.onSubmit.AddListener(new Action<string>(_ => Submit()));
+            // Confirm on an explicit Enter or native Continue action. The game's
+            // input module can submit the field while selecting another row.
+            input.onSubmit.AddListener(new Action<string>(_ =>
+            {
+                var keyboard = Keyboard.current;
+                if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)) Submit();
+            }));
             var placeholder = Label("Name placeholder", viewport.transform, nativeLabel);
             placeholder.text = L(hint);
             placeholder.color = new Color(1, 1, 1, 0.65f);
@@ -118,6 +134,7 @@ internal static class PlayerNameEntry
     {
         if (!Read(out var name)) return false;
         Main.SetPlayerName(name);
+        if (appearance) Main.SetHairColor(pendingHair);
         Close();
         return true;
     }
@@ -154,12 +171,27 @@ internal static class PlayerNameEntry
     internal static void SubmitMenuRow(int index)
     {
         if (!IsOpen) return;
+        if (appearance)
+        {
+            if (index == 1) { NativeMenu.Navigate(CycleHair); return; }
+            if (index > 1) index--;
+        }
         switch (index)
         {
             case 0: Focus(); break;
             case 1: Submit(); break;
             case 2: NativeMenu.Navigate(Cancel); break;
         }
+    }
+
+    internal static void CycleHair()
+    {
+        if (!IsOpen || !appearance) return;
+        input?.DeactivateInputField();
+        pendingHair = HairColors.Next(pendingHair);
+        if (MenuSmokeTest.Enabled) SrLogger.LogMessage("HAIR MENU choice=" + pendingHair);
+        NativeMenu.RefreshHairCaption(pendingHair);
+        if (appearancePreview != null) PlayerHair.Apply(appearancePreview, pendingHair);
     }
 
     private static void Submit()
@@ -172,6 +204,8 @@ internal static class PlayerNameEntry
     internal static void Close()
     {
         IsOpen = false; generation++;
+        if (appearancePreview != null) PlayerHair.Apply(appearancePreview, 0);
+        appearancePreview = null;
         if (input != null) input.DeactivateInputField();
         if (nativeLabel != null) nativeLabel.enabled = true;
         if (editor != null) Object.Destroy(editor);

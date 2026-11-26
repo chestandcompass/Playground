@@ -97,3 +97,10 @@ Wybrany w natywnym menu gry styl Vacpacka jest przesylany osobno dla kazdego gra
 Styl goscia jest zapamietywany lokalnie w `vac-style.txt` obok jego profilu danego swiata hosta i przywracany po ponownym dolaczeniu. Zmiana nazwy swiata nie zmienia tego przypisania. Gra 1.3.0 oferuje style Vacpacka; Playground nie dodaje edytora stroju ani koloru Beatrix.
 
 Walidacja preview 15: 87 testow automatycznych PASS oraz 29 sprawdzen kosmetyki w jednej instancji gry PASS (23 style, niezalezne materialy dwoch modeli, brak przemalowywania przez lokalny wybor, powrot do prostego stylu, serializacja, opozniony model/idempotencja, odrzucenie nieznanego stylu). Pelna sesja dwoch PC nadal wymaga sprawdzenia.
+
+## Preview 16: kolor wlosow gracza
+Przy wpisywaniu imienia jest natywny przycisk **Hair color / Kolor wlosow**. Kazde nacisniecie wybiera kolejny wariant: Oryginalny, Blond, Brazowy, Czarny, Rudy, Rozowy, Fioletowy. Postac w tle menu pokazuje podglad. Continue zapamietuje imie i kolor lokalnie, Back anuluje edycje. Formularz zmiany nazwy swiata nadal ma tylko nazwe swiata.
+
+Domyslny Oryginalny uzywa niezmienionego materialu gry. Pozostale warianty dostaja osobne materialy wlosow i tekstury generowane lokalnie z atlasu gry, bez zmiany skory, pozostalych postaci ani plikow gry. Pamiec tekstur ma ograniczona rozdzielczosc i wspoldzielony cache kolorow. Kolor jest dolaczony do pakietow wygladu, walidowany przez hosta i przechowywany do czasu pojawienia sie modelu gracza. Kazdy uczestnik sesji potrzebuje preview 16.
+
+Walidacja preview 16: 90 testow automatycznych PASS, 10 natywnych sprawdzen wlosow PASS i 30 sprawdzen pakietow/materialow Vacpacka PASS w jednej instancji gry. Obejmuje wybrane odcienie tekstur, niezalezne modele, nienaruszona skore i materialy gry, powrot do oryginalu, cache, serializacje koloru i odrzucanie niepoprawnych danych. W menu sprawdzono wpisywanie i przelaczanie kolorow z podgladem. Pelna sesja dwoch PC pozostaje do sprawdzenia.
