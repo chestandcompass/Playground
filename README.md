@@ -40,3 +40,7 @@ GPL-3.0, patrz [LICENSE](LICENSE). Kod synchronizacji zostal zaadaptowany z [Ran
 Instalator domyslnie ukrywa konsole MelonLoadera takze przy uruchamianiu gry ze Steam. Logi nadal zapisuja sie do plikow; inne ustawienia loadera sa zachowywane.
 
 Aby odinstalowac, otworz instalator ponownie i wybierz **Odinstaluj**, albo wybierz **Playground — Slime Rancher 2** w zainstalowanych aplikacjach Windows. Zapisy pozostaja na dysku. Gdy inne mody, pluginy lub UserLibs potrzebuja loadera, zostaje on aktywny; bez nich znany loader Playground zostaje wylaczony. Poprzednie pliki sa archiwizowane w PlaygroundBackups. Wspolny Microsoft .NET nie jest usuwany.
+
+## Kopia swiata singleplayer
+W menu Playground wybierz **Skopiuj swiat singleplayer / Copy a singleplayer world**, wybierz swiat i potwierdz kopiowanie. Najnowszy poprawny zapis trafi do **Moje swiaty / My worlds**. Oryginal pozostaje bez zmian; oba swiaty rozwijaja sie niezaleznie. Ponowny import tego samego swiata jest blokowany, aby chronic postepy multiplayer. Kopiowanie plikow sprawdzono automatycznie; caly przebieg importu i wczytania w grze wymaga jeszcze walidacji.
+

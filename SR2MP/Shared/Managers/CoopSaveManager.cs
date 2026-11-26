@@ -90,6 +90,24 @@ internal static class CoopSaveManager
 
     internal static void MarkSessionStarted() => sessionActive = Enabled;
 
+    internal static bool ImportSingleplayer(Summary save)
+    {
+        SelectRole("singleplayer");
+        // Resolve through the game's storage provider rather than guessing extensions.
+        var source = Path.GetFullPath(Storage.GetFullFilePath(save.SaveName));
+        var sourceRoot = Path.GetFullPath(Storage.savePath);
+        if (!string.Equals(Path.GetDirectoryName(source), sourceRoot.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("Save is outside the singleplayer directory.");
+        var gameName = save.SaveIdentifier.GameName;
+        SelectRole("host");
+        // The native metadata keeps its world identity. A second import must never
+        // merge with, roll back, or overwrite a previously played multiplayer copy.
+        foreach (var group in GameContext.Instance.AutoSaveDirector.AvailableGamesByGameName())
+            if (group.Key == gameName) return false;
+        CoopFiles.CopySave(sourceRoot, Storage.savePath, Path.GetFileName(source));
+        return true;
+    }
+
     internal static bool CanNetwork(string role)
     {
         if (Role == role && (role != "guest" || !guestWasBound)) return true;

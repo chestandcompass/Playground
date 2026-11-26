@@ -135,6 +135,7 @@ internal static class NativeMenu
         Page(
             (L("Utwórz świat", "Create a world"), CreateHost),
             (L("Moje światy", "My worlds"), ShowWorlds),
+            (L("Skopiuj świat singleplayer", "Copy a singleplayer world"), ShowImportWorlds),
             (L("Dołącz do znajomego", "Join a friend"), ShowJoin),
             (UpdateManager.Caption, () => { UpdateManager.Activate(); ShowHome(); }),
             (L("Wróć", "Back"), Back));
@@ -213,6 +214,33 @@ internal static class NativeMenu
         (L("Wklej kod i dołącz", "Paste code and join"), JoinCopiedCode),
         (L("Skąd wziąć kod?", "How do I get a code?"), ShowJoinHelp),
         (L("Wróć", "Back"), ShowHome));
+
+    private static void ShowImportWorlds()
+    {
+        CoopSaveManager.SelectRole("singleplayer");
+        var options = new List<(string, Action)>();
+        foreach (var group in GameContext.Instance.AutoSaveDirector.AvailableGamesByGameName())
+        {
+            Il2CppMonomiPark.SlimeRancher.Persist.Summary? latest = null;
+            foreach (var candidate in group.Value)
+                if (!candidate.IsInvalid && (latest == null || candidate.SaveNumber > latest.SaveNumber)) latest = candidate;
+            if (latest == null) continue;
+            var selected = latest;
+            options.Add((selected.DisplayName, () => Page(
+                (L("Skopiuj: ", "Copy: ") + selected.DisplayName, () =>
+                {
+                    var copied = CoopSaveManager.ImportSingleplayer(selected);
+                    Page((copied ? L("Gotowe! Otwórz Moje światy", "Copied! Open My worlds")
+                        : L("Ten świat ma już kopię multiplayer", "This world already has a multiplayer copy"), ShowWorlds),
+                        (L("Wróć", "Back"), ShowHome));
+                }),
+                (L("Oryginał pozostaje bez zmian — wróć", "Original stays unchanged — go back"), ShowImportWorlds))));
+        }
+        if (options.Count == 0)
+            options.Add((L("Brak zapisów singleplayer", "No singleplayer saves found"), ShowHome));
+        options.Add((L("Wróć", "Back"), ShowHome));
+        Page(options.ToArray());
+    }
 
     private static void ShowJoinHelp() => Page(
         (L("Host: pauza → Skopiuj kod zaproszenia", "Host: pause → Copy invitation code"), ShowJoinHelp),
@@ -296,6 +324,7 @@ internal static class NativeMenu
                 break;
             case "worlds": ShowWorlds(); break;
             case "join": ShowJoin(); break;
+            case "import": ShowImportWorlds(); break;
             case "join-paste": JoinCopiedCode(); break;
             case "join-help": ShowJoinHelp(); break;
             case "update-refresh": RefreshUpdateStatus(); break;

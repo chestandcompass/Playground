@@ -55,6 +55,35 @@ try
     }
     Check(blocked && File.ReadAllBytes(profile).SequenceEqual(new byte[] { 4, 5 }), "failed replacement preserves last successful snapshot");
     Check(!Directory.EnumerateFiles(root, "*.tmp", SearchOption.AllDirectories).Any(), "failed writes leave no temporary files");
+    var singleplayer = Path.Combine(root, "singleplayer");
+    var multiplayer = Path.Combine(root, "multiplayer");
+    Directory.CreateDirectory(singleplayer);
+    var original = Path.Combine(singleplayer, "world_12.sav");
+    File.WriteAllBytes(original, new byte[] { 10, 20, 30 });
+    CoopFiles.CopySave(singleplayer, multiplayer, "world_12.sav");
+    var imported = Path.Combine(multiplayer, "world_12.sav");
+    Check(File.ReadAllBytes(imported).SequenceEqual(File.ReadAllBytes(original)), "import preserves the complete native save bytes");
+    File.WriteAllBytes(imported, new byte[] { 40 });
+    Check(File.ReadAllBytes(original).SequenceEqual(new byte[] { 10, 20, 30 }), "multiplayer progress cannot change the singleplayer original");
+    var duplicateBlocked = false;
+    try { CoopFiles.CopySave(singleplayer, multiplayer, "world_12.sav"); }
+    catch (IOException) { duplicateBlocked = true; }
+    Check(duplicateBlocked && File.ReadAllBytes(imported).SequenceEqual(new byte[] { 40 }), "repeated import preserves existing multiplayer progress");
+    foreach (var badName in new[] { "../world_12.sav", "settings.cfg", "" })
+    {
+        var refused = false;
+        try { CoopFiles.CopySave(singleplayer, multiplayer, badName); }
+        catch (InvalidDataException) { refused = true; }
+        Check(refused, "import rejects unsafe or non-save filename: " + badName);
+    }
+    var lockedImportBlocked = false;
+    using (var locked = new FileStream(original, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+    {
+        try { CoopFiles.CopySave(singleplayer, Path.Combine(root, "locked-import"), "world_12.sav"); }
+        catch (IOException) { lockedImportBlocked = true; }
+    }
+    Check(lockedImportBlocked && !File.Exists(Path.Combine(root, "locked-import", "world_12.sav")), "busy source leaves no partially published multiplayer save");
+    Check(!Directory.EnumerateFiles(root, "*.tmp", SearchOption.AllDirectories).Any(), "failed imports clean up temporary copies");
     Console.WriteLine($"{passed} storage assertions passed.");
 }
 finally { Directory.Delete(root, true); }

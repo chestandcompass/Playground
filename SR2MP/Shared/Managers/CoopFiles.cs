@@ -37,4 +37,32 @@ internal static class CoopFiles
             if (File.Exists(temporary)) File.Delete(temporary);
         }
     }
+
+    internal static void CopySave(string sourceRoot, string destinationRoot, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName
+            || !fileName.EndsWith(".sav", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("Invalid save filename.");
+        var source = Path.Combine(Path.GetFullPath(sourceRoot), fileName);
+        var destination = Path.Combine(Path.GetFullPath(destinationRoot), fileName);
+        if (string.Equals(source, destination, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("The copy must use a separate save directory.");
+        if ((File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException("Save links cannot be imported.");
+        Directory.CreateDirectory(destinationRoot);
+        var temporary = destination + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            // Deny concurrent writers while taking the snapshot. Publish only a complete
+            // copy, and never overwrite a multiplayer save, even if another copy raced us.
+            using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                input.CopyTo(output);
+                output.Flush(true);
+            }
+            File.Move(temporary, destination);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
 }
