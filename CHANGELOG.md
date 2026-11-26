@@ -2,6 +2,16 @@
 
 All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows x64. Full host-and-guest validation on two computers remains pending.
 
+## Preview 18
+
+- Fix the guest-profile load translator that could disconnect returning guests before player models and markers were created.
+- Store reference tables and checksums with new guest snapshots, retain legacy reading, and restore only personal vacuum contents.
+- Display explicit singleplayer, connecting, connected, and host-waiting states in the HUD.
+- Stop disconnected guests from continuing offline: checkpoint inventory, disable interaction, and return to the menu with an explanation.
+- Detect silent hosts and route guest disconnect cleanup through the game thread. Ignore queued client packets after disconnect.
+- Assign remote player identity before activating the model.
+- Validation: 99 automated assertions and eight native regression checks passed, including the reported legacy profile and native return to menu. A brief two-computer check confirmed remote character/marker visibility; broader multiplayer testing remains pending.
+
 ## Preview 17
 
 - Make public documentation and all Playground installer labels, progress messages, and generated errors English.

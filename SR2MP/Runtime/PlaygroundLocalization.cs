@@ -39,6 +39,14 @@ internal static class PlaygroundLocalization
 
     // Columns: en | pl | de | fr | es | pt | ru | ja | ko | zh (Simplified).
     private const string Translations = @"Play with a friend|Graj ze znajomym|Mit Freunden spielen|Jouer avec un ami|Jugar con un amigo|Jogar com um amigo|Играть с другом|フレンドと遊ぶ|친구와 플레이|与好友游玩
+Singleplayer|Gra solo|Einzelspieler|Solo|Un jugador|Um jogador|Одиночная игра|シングルプレイ|싱글플레이|单人游戏
+Multiplayer: waiting for players|Multiplayer: oczekiwanie na graczy|Mehrspieler: Warte auf Spieler|Multijoueur : en attente de joueurs|Multijugador: esperando jugadores|Multijogador: aguardando jogadores|Мультиплеер: ожидание игроков|マルチプレイ：プレイヤー待機中|멀티플레이: 플레이어 대기 중|多人游戏：等待玩家
+Multiplayer: players connected|Multiplayer: gracze połączeni|Mehrspieler: Spieler verbunden|Multijoueur : joueurs connectés|Multijugador: jugadores conectados|Multijogador: jogadores conectados|Мультиплеер: игроки подключены|マルチプレイ：プレイヤー接続済み|멀티플레이: 플레이어 연결됨|多人游戏：玩家已连接
+Multiplayer: connecting...|Multiplayer: łączenie...|Mehrspieler: Verbindung wird hergestellt...|Multijoueur : connexion...|Multijugador: conectando...|Multijogador: conectando...|Мультиплеер: подключение...|マルチプレイ：接続中...|멀티플레이: 연결 중...|多人游戏：连接中...
+Multiplayer: connected|Multiplayer: połączono|Mehrspieler: Verbunden|Multijoueur : connecté|Multijugador: conectado|Multijogador: conectado|Мультиплеер: подключено|マルチプレイ：接続済み|멀티플레이: 연결됨|多人游戏：已连接
+Multiplayer: disconnected|Multiplayer: rozłączono|Mehrspieler: Getrennt|Multijoueur : déconnecté|Multijugador: desconectado|Multijogador: desconectado|Мультиплеер: отключено|マルチプレイ：切断されました|멀티플레이: 연결 끊김|多人游戏：连接已断开
+Connection ended. Rejoin to continue.|Połączenie zakończone. Dołącz ponownie, aby grać.|Verbindung beendet. Zum Weiterspielen erneut beitreten.|Connexion terminée. Rejoignez la partie pour continuer.|Conexión finalizada. Vuelve a unirte para continuar.|Conexão encerrada. Entre novamente para continuar.|Соединение завершено. Подключитесь снова для продолжения.|接続が終了しました。再参加して続けてください。|연결이 종료되었습니다. 다시 참가해 주세요.|连接已结束。请重新加入以继续。
+Could not load your guest profile.|Nie można wczytać profilu gościa.|Dein Gastprofil konnte nicht geladen werden.|Impossible de charger votre profil invité.|No se pudo cargar tu perfil de invitado.|Não foi possível carregar seu perfil de convidado.|Не удалось загрузить профиль гостя.|ゲストプロフィールを読み込めませんでした。|게스트 프로필을 불러올 수 없습니다.|无法加载访客档案。
 Hair color|Kolor włosów|Haarfarbe|Couleur des cheveux|Color de pelo|Cor do cabelo|Цвет волос|髪の色|머리 색|头发颜色
 Original|Oryginalny|Original|Originale|Original|Original|Оригинальный|オリジナル|기본|原始
 Blond|Blond|Blond|Blond|Rubio|Loiro|Блонд|金髪|금발|金色

@@ -6,7 +6,12 @@ namespace SR2MP.Patches.General;
 [HarmonyPatch(typeof(PauseMenuDirector), nameof(PauseMenuDirector.Quit))]
 internal static class OnQuitSave
 {
-    public static void Prefix() => SR2MP.Shared.Managers.CoopSaveManager.SavePlayer();
+    public static void Prefix()
+    {
+        SessionGuard.NativeQuit();
+        try { SR2MP.Shared.Managers.CoopSaveManager.SavePlayer(); }
+        catch (Exception ex) { SrLogger.LogError("Guest checkpoint failed while leaving; retaining the previous snapshot: " + ex); }
+    }
     public static void Postfix()
     {
         if (Main.Server.IsRunning)

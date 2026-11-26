@@ -30,6 +30,8 @@ public sealed class SR2MPClient
     private volatile bool connectionAcknowledged;
     private Timer? connectionTimeoutTimer;
     private const int ConnectionTimeoutSeconds = 10;
+    private long lastHostPacket;
+    internal double HostSilenceSeconds => Math.Max(0, Environment.TickCount64 - Interlocked.Read(ref lastHostPacket)) / 1000d;
 
     private bool shownConnectionError;
     private bool subscribedToQuitting;
@@ -123,6 +125,8 @@ public sealed class SR2MPClient
             return;
         }
         
+        SessionGuard.BeginConnect();
+        Interlocked.Exchange(ref lastHostPacket, Environment.TickCount64);
         isConnecting = true;
 
         try
@@ -238,6 +242,7 @@ public sealed class SR2MPClient
                     if (receivedBytes == 0)
                         continue;
 
+                    Interlocked.Exchange(ref lastHostPacket, Environment.TickCount64);
                     packetManager.HandlePacket(receiveBuffer, receivedBytes, (IPEndPoint)remoteEp);
                     SrLogger.LogPacketSize($"Received {receivedBytes} bytes",
                         $"Received {receivedBytes} bytes from {remoteEp}");
@@ -356,11 +361,15 @@ public sealed class SR2MPClient
 
     internal void Disconnect()
     {
+        if (!MainThreadDispatcher.IsMainThread && MainThreadDispatcher.Instance is not null)
+        { MainThreadDispatcher.Instance.Enqueue(Disconnect); return; }
         if (!isConnected)
             return;
 
         try
         {
+            try { CoopSaveManager.SavePlayer(); }
+            catch (Exception ex) { SrLogger.LogError("Could not checkpoint the guest profile before disconnect; retaining the previous snapshot: " + ex); }
             MultiplayerUI.Instance.ClearChatMessages();
 
             if (!shownConnectionError)

@@ -70,6 +70,7 @@ internal static class CoopSaveManager
         NetworkAmmoManager.ResetStorageRegistry();
         HostGadgetPlacement.Reset();
         PlayerCosmetics.Reset();
+        SessionGuard.Reset();
         GuestWorld = null;
         guestWasBound = false;
         restorePending = false;
@@ -89,6 +90,7 @@ internal static class CoopSaveManager
         NetworkAmmoManager.ResetStorageRegistry();
         HostGadgetPlacement.Reset();
         PlayerCosmetics.Reset();
+        SessionGuard.Reset();
         Role = "singleplayer";
         GuestWorld = null;
         guestWasBound = false;
@@ -201,16 +203,7 @@ internal static class CoopSaveManager
     internal static void SavePlayer()
     {
         if (GuestWorld == null || restorePending || !Main.Client.IsJoined) return;
-        var player = new PlayerV12();
-        var director = GameContext.Instance.AutoSaveDirector;
-        GameModelPullHelpers.PullPlayer(GameState, player, director._saveReferenceTranslation.Cast<ISaveReferenceTranslation>(), director._savedGameInfoProvider);
-        var stream = new Il2CppSystem.IO.MemoryStream();
-        var writer = new Il2CppSystem.IO.BinaryWriter(stream);
-        player.WriteData(writer);
-        writer.Flush();
-        CoopFiles.WriteAtomic(Path.Combine(GuestWorld, "player.bin"), stream.ToArray());
-        writer.Dispose();
-        stream.Close();
+        CoopFiles.WriteAtomic(Path.Combine(GuestWorld, "player.bin"), GuestPlayerProfile.Capture());
     }
 
     internal static System.Collections.IEnumerator SavePeriodically()
@@ -228,31 +221,7 @@ internal static class CoopSaveManager
         var path = Path.Combine(GuestWorld!, "player.bin");
         if (File.Exists(path))
         {
-            // Never silently replace a corrupt guest profile with a fresh one.
-            var bytes = File.ReadAllBytes(path);
-            if (bytes.Length is < 1 or > 16777216) throw new InvalidDataException("Invalid guest profile size.");
-            var stream = new Il2CppSystem.IO.MemoryStream(bytes);
-            var reader = new Il2CppSystem.IO.BinaryReader(stream);
-            var player = new PlayerV12();
-            player.LoadData(reader);
-            reader.Close();
-            stream.Close();
-            // Shared progression/currencies come from this session and the host, never
-            // from an old guest snapshot. Only carry the guest's personal vacuum contents.
-            var current = new PlayerV12();
-            var director = GameContext.Instance.AutoSaveDirector;
-            GameModelPullHelpers.PullPlayer(GameState, current,
-                director._saveReferenceTranslation.Cast<ISaveReferenceTranslation>(), director._savedGameInfoProvider);
-            current.Ammo = player.Ammo;
-            var wasHandling = HandlingPacket;
-            try
-            {
-                HandlingPacket = true;
-                GameModelPushHelpers.PushPlayer(GameState, current,
-                    director._saveReferenceTranslation.Cast<ILoadReferenceTranslation>());
-                SceneContext.Instance.PlayerState.Ammo.SetModel(GameState.player.ammoModel);
-            }
-            finally { HandlingPacket = wasHandling; }
+            GuestPlayerProfile.Restore(File.ReadAllBytes(path));
         }
         else
         {

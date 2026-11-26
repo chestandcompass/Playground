@@ -136,6 +136,8 @@ internal static class NativeMenu
         var entry = Item("Play with a friend", ShowHome);
         menu._models.Insert(Math.Min(1, menu._models.Count), entry);
         SrLogger.LogMessage("Playground: installed native main-menu entry.");
+        var notice = SessionGuard.TakeNotice();
+        if (notice != null) Navigate(() => Page((notice, ShowHome), ("Back", ShowHome)), false);
     }
 
     private static PlaygroundMenuItem Item(string text, Action action)
@@ -604,6 +606,9 @@ internal static class NativeMenu
             case "gadget-smoke": HostGadgetPlacement.SmokeTest(); break;
             case "cosmetics-smoke": PlayerCosmetics.SmokeTest(); break;
             case "hair-smoke": PlayerHair.SmokeTest(); break;
+            case "guest-profile-smoke": GuestPlayerProfile.SmokeTest(); break;
+            case "remote-player-smoke": MelonLoader.MelonCoroutines.Start(SR2MP.Handlers.Internal.ConnectionApproveHandler.SpawnSmoke()); break;
+            case "disconnect-smoke": SessionGuard.TestLostConnection(); break;
             case "play-selected": root!._models[0].InvokeBehavior(); break;
             case "back": Back(); break;
             case "home": ShowHome(); break;

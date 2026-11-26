@@ -217,6 +217,7 @@ public sealed class Main : MelonMod
 
     public override void OnUpdate()
     {
+        SessionGuard.Update();
         LanDiscovery.Update();
         NativeMenu.UpdateLanBrowser();
         PlayerNameEntry.Update();

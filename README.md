@@ -28,6 +28,14 @@ Discovery uses **UDP 19190**. The game connection uses the host's port, **UDP 19
 
 The first guest connection prepares a separate local staging save, skips its prologue, and displays **Joining...**. It should not ask the guest to configure a new world. The staging save is reused for later connections.
 
+## Connection status and disconnects
+
+A small status label in the native HUD distinguishes singleplayer, connecting, connected multiplayer, and a host waiting for players. Opening a transport socket alone does not count as a completed join.
+
+A disconnected guest cannot continue playing in the local staging world. Playground checkpoints an acknowledged guest's inventory, disables gameplay controls, and returns to the main menu with an explanation. A failed join also returns to the menu. An unresponsive host is treated as disconnected after ten seconds without host traffic.
+
+Guest profiles use the game's native load-reference factory. New snapshots include their native reference tables and a checksum in one atomic file; legacy player snapshots remain readable. Only personal vacuum contents are restored, preserving the host's progression, currencies, health, position, and slot settings. Failed restoration preserves the existing file instead of replacing it with an empty inventory.
+
 ## Player name and appearance
 
 Before hosting or joining, the native menu asks for **Your name**. Confirmed names are remembered locally and appear above players and on their markers. Names are limited to 24 characters; empty names are rejected. Name changes do not change player identity or save associations.
@@ -86,7 +94,7 @@ Native menu and pause buttons resize to fit translated captions. Long labels wra
 
 ## Validation status
 
-The latest gameplay validation passed **90 automated assertions** and **40 checks in one game instance**: 10 hair checks and 30 Vacpack/material/packet checks. Earlier checks covered storage rebinding, delayed storage registration, stock arbitration, and host-controlled rules. Menu typing and appearance previews have also been inspected in-game.
+Preview 18 adds **99 automated assertions** and native regression checks for legacy guest-profile loading, non-empty inventory round-tripping, corruption rejection, remote model/marker startup, and returning to the menu after disconnect. A player also confirmed that both the remote character and marker appeared during a brief two-computer connection. This is a limited check, not full multiplayer validation. Earlier cosmetic checks covered 23 Vacpack styles and independent hair materials.
 
 These checks do **not** replace a full session on two computers. Reconnection, appearance delivery, world interactions, imports, deletion, and simultaneous actions need continued player testing. See [CHANGELOG.md](CHANGELOG.md) and individual [release notes](https://github.com/robertbrania-code/Playground/releases) for changes and validation limits.
 

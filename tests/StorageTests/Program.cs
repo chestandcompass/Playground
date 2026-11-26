@@ -18,6 +18,20 @@ void Check(bool value, string message)
 try
 {
     LanDiscoveryChecks.Run(Check);
+    var guestBytes = GuestProfileEnvelope.Write(new byte[] { 3, 5 }, new byte[] { 9, 2, 7 });
+    var guestRead = GuestProfileEnvelope.Read(guestBytes);
+    Check(guestRead.references!.SequenceEqual(new byte[] { 3, 5 }) && guestRead.player.SequenceEqual(new byte[] { 9, 2, 7 }), "guest snapshots keep native reference tables and player data together");
+    Check(GuestProfileEnvelope.Read(new byte[] { 100, 0, 0, 0, 1 }).references == null, "legacy player snapshots remain readable without discarding the original bytes");
+    guestBytes[guestBytes.Length - 1] ^= 1;
+    var corruptGuestRejected = false;
+    try { GuestProfileEnvelope.Read(guestBytes); } catch (InvalidDataException) { corruptGuestRejected = true; }
+    Check(corruptGuestRejected, "corrupt guest snapshots fail checksum validation before native deserialization");
+    Check(SessionPolicy.Evaluate("guest", false, 0, false, false, false, 0) == SessionState.Joining, "guest staging stays in joining state until a real connection attempt");
+    Check(SessionPolicy.Evaluate("guest", false, 0, true, true, false, 0) == SessionState.Joining, "a transport socket alone does not claim the guest is connected");
+    Check(SessionPolicy.Evaluate("guest", false, 0, true, true, true, 2) == SessionState.Connected, "guest status requires the acknowledged connection");
+    Check(SessionPolicy.Evaluate("guest", false, 0, true, true, true, 10) == SessionState.Disconnected, "silent host is treated as disconnected after ten real seconds");
+    Check(SessionPolicy.Evaluate("guest", false, 0, true, false, false, 0) == SessionState.Disconnected, "failed joins and dropped connections cannot continue as singleplayer");
+    Check(SessionPolicy.Evaluate("host", true, 0, false, false, false, 0) == SessionState.HostingAlone && SessionPolicy.Evaluate("host", true, 1, false, false, false, 0) == SessionState.HostingTogether, "host status distinguishes waiting from playing with peers");
     Check(HairColors.Normalize(-1) == 0 && HairColors.Normalize(255) == 0 && HairColors.Normalize(0) == 0, "missing or invalid hair preferences fall back to original");
     Check(HairColors.Next(6) == 0 && HairColors.Next(0) == 1 && !HairColors.IsValid(7), "hair selection cycles back to original and rejects unknown wire values");
     Check(PlaygroundLocalization.Translate("pl", HairColors.Caption(2)) == "Kolor włosów: Brązowy", "composed hair captions translate both the setting and selected color");

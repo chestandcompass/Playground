@@ -15,11 +15,11 @@ internal abstract class BasePlayerJoinHandler : BasePacketHandler<PlayerJoinPack
         packet.PlayerName = SR2MP.Shared.Utils.PlayerNames.SanitizeWire(packet.PlayerName);
         if (string.IsNullOrWhiteSpace(packet.PlayerName)) packet.PlayerName = "Player";
         var playerObject = Object.Instantiate(PlayerPrefab).GetComponent<NetworkPlayer>();
-        playerObject.gameObject.SetActive(true);
         playerObject.ID = packet.PlayerId;
         playerObject.gameObject.name = packet.PlayerId;
         PlayerObjects.Add(packet.PlayerId, playerObject.gameObject);
         PlayerManager.AddPlayer(packet.PlayerId).Username = packet.PlayerName!;
+        playerObject.gameObject.SetActive(true);
         Object.DontDestroyOnLoad(playerObject);
     }
 }

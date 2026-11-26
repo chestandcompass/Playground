@@ -29,6 +29,7 @@ internal sealed class ConnectionApproveHandler : BasePacketHandler<ConnectionApp
             catch (Exception ex)
             {
                 SrLogger.LogError($"Guest save could not be loaded; connection stopped: {ex}");
+                SessionGuard.Failure("Could not load your guest profile.");
                 Main.Client.Disconnect();
                 return false;
             }
@@ -42,10 +43,6 @@ internal sealed class ConnectionApproveHandler : BasePacketHandler<ConnectionApp
             PacketSender.SendPacket(joinPacket);
 
             // SR2MPClient.StartHeartbeat();
-            Main.Client.NotifyConnected();
-
-            SrLogger.LogMessage($"Connection acknowledged by server! (PlayerId: {packet.PlayerId})");
-
             CheatsEnabled = packet.AllowCheats;
 
             // todo: resync players too
@@ -65,17 +62,52 @@ internal sealed class ConnectionApproveHandler : BasePacketHandler<ConnectionApp
 
         ApiHandlers.RefreshPacketMapping();
 
+        if (packet.InitialJoin)
+        {
+            Main.Client.NotifyConnected();
+            SrLogger.LogMessage($"Connection acknowledged by server! (PlayerId: {packet.PlayerId})");
+        }
+
         return false;
     }
 
     private static void SpawnPlayer(string id, string name)
     {
         var playerObject = Object.Instantiate(PlayerPrefab).GetComponent<NetworkPlayer>();
-        playerObject.gameObject.SetActive(true);
         playerObject.ID = id;
         playerObject.gameObject.name = id;
         PlayerObjects.Add(id, playerObject.gameObject);
         PlayerManager.AddPlayer(id).Username = name;
+        playerObject.gameObject.SetActive(true);
         Object.DontDestroyOnLoad(playerObject);
+    }
+
+    internal static System.Collections.IEnumerator SpawnSmoke()
+    {
+        if (!MenuSmokeTest.Enabled || !Main.Server.IsRunning || Main.Server.ClientManager.ClientCount != 0)
+            throw new InvalidOperationException("Use an isolated host test world without peers.");
+        const string id = "PLAYER_SMOKE0001";
+        SpawnPlayer(id, "Test player");
+        var player = PlayerManager.GetPlayer(id)!;
+        player.Position = SceneContext.Instance.player.transform.position + Vector3.forward * 4;
+        player.SceneGroup = SR2MP.Shared.Managers.NetworkSceneManager.GetPersistentID(SystemContext.Instance.SceneLoader.CurrentSceneGroup);
+        try
+        {
+            yield return new WaitForSecondsRealtime(1);
+            var obj = PlayerObjects[id];
+            var network = obj.GetComponent<NetworkPlayer>();
+            if (!obj.activeInHierarchy || !obj.GetComponentsInChildren<SkinnedMeshRenderer>(true).Any(r => r.enabled && r.gameObject.activeInHierarchy && r.sharedMesh != null))
+                throw new InvalidOperationException("Remote player has no active model.");
+            SrLogger.LogMessage("REMOTE PLAYER SMOKE PASS: connection-approval path creates an active remote model");
+            var marker = obj.GetComponent<Il2CppMonomiPark.SlimeRancher.UI.RadarTrackedPointOfInterest>();
+            if (marker == null || !marker.enabled || network.UsernamePanel.text != "Test player")
+                throw new InvalidOperationException("Remote player marker/name was not initialized.");
+            SrLogger.LogMessage("REMOTE PLAYER SMOKE PASS: native compass marker and player name initialize after spawning");
+        }
+        finally
+        {
+            PlayerManager.RemovePlayer(id);
+            if (PlayerObjects.Remove(id, out var obj)) Object.Destroy(obj);
+        }
     }
 }

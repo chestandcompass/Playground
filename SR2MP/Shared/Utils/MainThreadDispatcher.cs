@@ -9,6 +9,8 @@ namespace SR2MP.Shared.Utils;
 internal sealed class MainThreadDispatcher : MonoBehaviour
 {
     public static MainThreadDispatcher Instance { get; private set; }
+    private static int mainThread;
+    internal static bool IsMainThread => Environment.CurrentManagedThreadId == mainThread;
 
     // ReSharper disable once InconsistentNaming
     private readonly ConcurrentQueue<Action> actionQueue = new();
@@ -21,6 +23,7 @@ internal sealed class MainThreadDispatcher : MonoBehaviour
 
     public static void Initialize()
     {
+        mainThread = Environment.CurrentManagedThreadId;
         if (Instance) return;
 
         var obj = new GameObject("SR2MP_MainThreadDispatcher");
@@ -50,7 +53,7 @@ internal sealed class MainThreadDispatcher : MonoBehaviour
         {
             try
             {
-                clientCache.Handler.Handle(clientCache.Reader);
+                if (Main.Client.IsConnected) clientCache.Handler.Handle(clientCache.Reader);
             }
             catch (Exception ex)
             {
