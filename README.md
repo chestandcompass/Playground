@@ -34,3 +34,9 @@ Biblioteki gry nie sa dystrybuowane i nie wolno ich dodawac do repozytorium. Do 
 ## Licencja i pochodzenie
 
 GPL-3.0, patrz [LICENSE](LICENSE). Kod synchronizacji zostal zaadaptowany z [Ranching Together / pyeight](https://github.com/pyeight/SlimeRancher2Multiplayer), autorstwa Shark (py8) i wspoltworcow. Zachowujemy autorstwo upstream. Playground dodaje samodzielna integracje z gra, natywne menu, izolacje zapisow, instalator i aktualizacje. Projekt nie jest oficjalnym dodatkiem Monomi Park i nie zawiera plikow gry.
+
+## Konsola i odinstalowanie
+
+Instalator domyslnie ukrywa konsole MelonLoadera takze przy uruchamianiu gry ze Steam. Logi nadal zapisuja sie do plikow; inne ustawienia loadera sa zachowywane.
+
+Aby odinstalowac, otworz instalator ponownie i wybierz **Odinstaluj**, albo wybierz **Playground — Slime Rancher 2** w zainstalowanych aplikacjach Windows. Zapisy pozostaja na dysku. Gdy inne mody, pluginy lub UserLibs potrzebuja loadera, zostaje on aktywny; bez nich znany loader Playground zostaje wylaczony. Poprzednie pliki sa archiwizowane w PlaygroundBackups. Wspolny Microsoft .NET nie jest usuwany.

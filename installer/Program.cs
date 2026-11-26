@@ -50,6 +50,12 @@ namespace PlaygroundSetup
                     try { Process.GetProcessById(pid).WaitForExit(); }
                     catch (ArgumentException) { }
                 }
+                if (args.Contains("--uninstall") || args.Contains("--test-uninstall"))
+                {
+                    Maintenance.Uninstall(game, args.Contains("--test-uninstall"));
+                    if (!args.Contains("--test-uninstall")) MessageBox.Show("Playground został odinstalowany. Twoje zapisy zostały zachowane.", "Playground");
+                    return 0;
+                }
                 if (args.Contains("--verify"))
                 {
                     VerifyGame(game);
@@ -93,7 +99,7 @@ namespace PlaygroundSetup
             {
                 if (args.Contains("--apply-update"))
                     File.WriteAllText(Path.Combine(Argument(args, "--game"), "Playground.update-result.txt"), "ERROR: " + ex.Message);
-                else if (args.Contains("--verify") || args.Contains("--test-install"))
+                else if (args.Contains("--verify") || args.Contains("--test-install") || args.Contains("--test-uninstall"))
                     File.WriteAllText(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "verify-error.txt"), ex.ToString());
                 else MessageBox.Show(ex.Message, "Playground", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return 1;
@@ -126,7 +132,7 @@ namespace PlaygroundSetup
                 .Where(path => File.Exists(Path.Combine(path, "SlimeRancher2.exe"))).ToArray();
         }
 
-        static void VerifyGame(string directory)
+        internal static void VerifyGame(string directory)
         {
             if (String.IsNullOrWhiteSpace(directory) || !File.Exists(Path.Combine(directory, "SlimeRancher2.exe")) ||
                 !File.Exists(Path.Combine(directory, "GameAssembly.dll")) || !Directory.Exists(Path.Combine(directory, "SlimeRancher2_Data")))
@@ -288,6 +294,7 @@ namespace PlaygroundSetup
                 File.Copy(Path.Combine(loader, "version.dll"), existingVersionDll, true);
             }
             progress("Instaluję Playground...");
+            Maintenance.HideConsole(game);
             string destination = Path.Combine(mods, "Playground.dll");
             string pending = destination + ".pending";
             File.Copy(mod, pending, true);
@@ -302,6 +309,7 @@ namespace PlaygroundSetup
             string self = Assembly.GetExecutingAssembly().Location;
             string installedSetup = Path.Combine(game, "PlaygroundSetup.exe");
             if (!Path.GetFullPath(self).Equals(Path.GetFullPath(installedSetup), StringComparison.OrdinalIgnoreCase)) File.Copy(self, installedSetup, true);
+            if (!offline) Maintenance.Register(game, release.Version + " (test " + release.Build + ")");
             progress("Gotowe! Playground jest zainstalowany.");
         }
     }
@@ -321,9 +329,12 @@ namespace PlaygroundSetup
         readonly Label status = new Label();
         readonly ProgressBar progress = new ProgressBar();
         readonly Button action = new Button();
+        readonly Button remove = new Button();
         readonly string requested;
         readonly bool preview;
         string selected;
+        bool installed;
+        bool managing;
 
         internal SetupWindow(string game, bool render)
         {
@@ -336,8 +347,16 @@ namespace PlaygroundSetup
             progress.SetBounds(32, 181, 510, 12); progress.Style = ProgressBarStyle.Marquee;
             action.Text = "Chwileczkę..."; action.Enabled = false; action.SetBounds(333, 218, 210, 38); action.FlatStyle = FlatStyle.Flat;
             action.BackColor = Color.FromArgb(232, 77, 142); action.ForeColor = Color.White; action.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-            Controls.AddRange(new Control[] { title, subtitle, status, progress, action });
-            action.Click += delegate { if (selected != null) { Process.Start("steam://rungameid/1657630"); } Close(); };
+            remove.Text = "Odinstaluj"; remove.SetBounds(32, 218, 170, 38); remove.Visible = false;
+            Controls.AddRange(new Control[] { title, subtitle, status, progress, action, remove });
+            action.Click += async delegate { if (managing) { managing = false; await PerformInstall(); return; } if (installed && selected != null) Process.Start("steam://rungameid/1657630"); Close(); };
+            remove.Click += async delegate
+            {
+                action.Enabled = false; remove.Enabled = false;
+                try { await Task.Run(delegate { Maintenance.Uninstall(selected, false); }); status.Text = "Playground usunięty. Zapisy zachowane."; installed = false; managing = false; selected = null; action.Text = "Zamknij"; remove.Visible = false; }
+                catch (Exception ex) { status.Text = ex.Message; }
+                action.Enabled = true; remove.Enabled = true;
+            };
             Shown += async delegate { if (!preview) await BeginInstall(); };
         }
 
@@ -353,15 +372,32 @@ namespace PlaygroundSetup
                     else using (var dialog = new OpenFileDialog { Title = "Wskaż SlimeRancher2.exe", Filter = "Slime Rancher 2|SlimeRancher2.exe" })
                     { if (dialog.ShowDialog(this) != DialogResult.OK) { Close(); return; } selected = Path.GetDirectoryName(dialog.FileName); }
                 }
+                if (File.Exists(Path.Combine(selected, @"Mods\Playground.dll")))
+                {
+                    managing = true; status.Text = "Playground jest zainstalowany. Wybierz aktualizację lub odinstalowanie.";
+                    progress.Style = ProgressBarStyle.Continuous; action.Text = "Aktualizuj"; action.Enabled = true; remove.Visible = true; return;
+                }
+                await PerformInstall();
+            }
+            catch (Exception ex) { ShowError(ex); }
+        }
+
+        async Task PerformInstall()
+        {
+            try
+            {
+                action.Enabled = false; remove.Enabled = false; progress.Style = ProgressBarStyle.Marquee;
                 await Task.Run(delegate { Program.Install(selected, delegate(string message) { BeginInvoke((Action)delegate { status.Text = message; }); }, false); });
                 progress.Style = ProgressBarStyle.Continuous; progress.Value = 100;
-                action.Text = "Uruchom grę"; action.Enabled = true;
+                installed = true; action.Text = "Uruchom grę"; action.Enabled = true; remove.Visible = true; remove.Enabled = true;
             }
-            catch (Exception ex)
-            {
-                status.Text = ex.Message; progress.Style = ProgressBarStyle.Continuous;
-                selected = null; action.Text = "Zamknij"; action.Enabled = true;
-            }
+            catch (Exception ex) { ShowError(ex); }
+        }
+
+        void ShowError(Exception ex)
+        {
+            status.Text = ex.Message; progress.Style = ProgressBarStyle.Continuous;
+            selected = null; managing = false; action.Text = "Zamknij"; action.Enabled = true;
         }
     }
 }

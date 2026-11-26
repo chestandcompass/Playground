@@ -42,12 +42,21 @@ try {
     Compress-Archive -Path "$stage\*" -DestinationPath $payloadZip -Force
     $hash = (Get-FileHash $payloadZip -Algorithm SHA256).Hash.ToLowerInvariant()
     $generated = Join-Path $cache 'PayloadInfo.cs'
-    [IO.File]::WriteAllText($generated, 'namespace PlaygroundSetup { internal static class PayloadInfo { internal const string Sha256 = "' + $hash + '"; } }')
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($loader)
+    try {
+        $stream = $archive.GetEntry('version.dll').Open()
+        $algorithm = [Security.Cryptography.SHA256]::Create()
+        try { $proxyHash = ([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
+        finally { $algorithm.Dispose(); $stream.Dispose() }
+    }
+    finally { $archive.Dispose() }
+    [IO.File]::WriteAllText($generated, 'namespace PlaygroundSetup { internal static class PayloadInfo { internal const string Sha256 = "' + $hash + '"; internal const string ProxySha256 = "' + $proxyHash + '"; } }')
     $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
     & $compiler /nologo /target:winexe /platform:x64 /optimize+ /utf8output `
         /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Runtime.Serialization.dll `
         /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll `
-        "/resource:$payloadZip,Payload" /out:dist\PlaygroundSetup.exe installer\Program.cs $generated
+        "/resource:$payloadZip,Payload" /out:dist\PlaygroundSetup.exe installer\Program.cs installer\Maintenance.cs $generated
     if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
     $feed.setupUrl='https://github.com/robertbrania-code/Playground/releases/download/'+$release.tag+'/PlaygroundSetup.exe'
     $feed.setupSha256=(Get-FileHash dist\PlaygroundSetup.exe -Algorithm SHA256).Hash.ToLowerInvariant()
