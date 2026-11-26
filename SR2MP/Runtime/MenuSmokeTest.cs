@@ -32,6 +32,10 @@ internal static class MenuSmokeTest
         foreach (var label in Resources.FindObjectsOfTypeAll<TMP_Text>())
             if (label.gameObject.activeInHierarchy && !string.IsNullOrWhiteSpace(label.text))
                 lines.Add(label.gameObject.name + ": " + label.text);
+        foreach (var sizing in Resources.FindObjectsOfTypeAll<PlaygroundButtonSizing>())
+            if (sizing.gameObject.activeInHierarchy)
+                foreach (var label in sizing.GetComponentsInChildren<TMP_Text>())
+                    lines.Add($"BUTTON LAYOUT {label.text}: button={sizing.transform.Cast<RectTransform>().rect.size}; label={label.rectTransform.rect.size}; parent={sizing.transform.parent.name}; truncated={label.isTextTruncated}; overflow={label.isTextOverflowing}");
         var dir = Path.Combine(MelonLoader.Utils.MelonEnvironment.UserDataDirectory, "Playground", "MenuTest");
         Directory.CreateDirectory(dir);
         File.WriteAllLines(Path.Combine(dir, $"screen-{phase}.txt"), lines);

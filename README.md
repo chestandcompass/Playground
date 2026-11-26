@@ -55,3 +55,7 @@ Menu, pomoc, pauza, potwierdzenia i komunikaty aktualizacji uzywaja jezyka wybra
 
 Instalator preview 7 rozszerza wykrywanie Steam o rejestr uzytkownika i systemu (32/64 bit), InstallLocation gry, standardowe foldery Steam, stare i nowe libraryfolders.vdf oraz rzeczywisty folder z appmanifest_1657630.acf. Niepelne instalacje sa pomijane. Przy braku jednoznacznego wyniku mozna wskazac SlimeRancher2.exe recznie.
 
+
+## Dopasowanie przyciskow
+Przyciski Playground w natywnym menu glownym i pauzie dopasowuja szerokosc do przetlumaczonego napisu. Przy granicy ekranu tekst zawija sie, a przycisk rosnie na wysokosc. Wspoldzielone przyciski gry odzyskuja poprzednie ustawienia po wyjsciu z menu dodatku.
+

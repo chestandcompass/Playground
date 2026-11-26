@@ -72,12 +72,14 @@ internal static class NativeMenu
     private static bool pendingHost;
     private static bool navigationPending;
     private static int pageRevision;
+    private static readonly Dictionary<string, string> localizedSources = new();
 
     internal static LocalizedString Text(LocalizedString template, string text)
     {
         var table = LocalizationSettings.StringDatabase.GetTable(template.TableReference);
         if (table == null) throw new InvalidOperationException("The game's menu localization table is unavailable.");
         var key = "playground." + CoopFiles.Key(text);
+        localizedSources[key] = text;
         // Register one stable entry in every locale, so existing native buttons
         // also update when the player changes language without restarting.
         table.AddEntry(key, PlaygroundLocalization.Translate(LocalizationSettings.SelectedLocale?.Identifier.Code, text));
@@ -88,6 +90,18 @@ internal static class NativeMenu
                 localizedTable.AddEntry(key, PlaygroundLocalization.Translate(locale.Identifier.Code, text));
         }
         return new LocalizedString(template.TableReference, key);
+    }
+
+    internal static string RefreshCaption(LocalizedString caption)
+    {
+        var key = caption.TableEntryReference.Key;
+        if (key == null || !localizedSources.TryGetValue(key, out var source)) return "";
+        var translated = PlaygroundLocalization.Translate(LocalizationSettings.SelectedLocale?.Identifier.Code, source);
+        // Unity may unload runtime table entries when switching locales. Restore
+        // the entry in the newly loaded table before refreshing the native label.
+        var table = LocalizationSettings.StringDatabase.GetTable(caption.TableReference);
+        if (table != null) { table.AddEntry(key, translated); caption.RefreshString(); }
+        return translated;
     }
 
     internal static void AddEntry(MainMenuLandingRootUI menu)
@@ -346,6 +360,14 @@ internal static class NativeMenu
             case "import": ShowImportWorlds(); break;
             case "join-paste": JoinCopiedCode(); break;
             case "join-help": ShowJoinHelp(); break;
+            case "layout-small": Screen.SetResolution(1280, 720, false); break;
+            case "layout-original": Screen.SetResolution(2560, 1440, true); break;
+            case "locale-de":
+            case "locale-en":
+                foreach (var locale in LocalizationSettings.AvailableLocales.Locales)
+                    if (locale.Identifier.Code.StartsWith(command.Substring(7), StringComparison.OrdinalIgnoreCase))
+                    { LocalizationSettings.SelectedLocale = locale; break; }
+                break;
             case "update-refresh": RefreshUpdateStatus(); break;
             case "load":
                 ShowWorlds();
