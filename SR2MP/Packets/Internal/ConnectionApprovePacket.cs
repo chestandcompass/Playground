@@ -5,6 +5,7 @@ namespace SR2MP.Packets.Internal;
 internal sealed class ConnectionApprovePacket : IPacket
 {
     public bool InitialJoin;
+    internal SR2MP.Shared.Utils.WorldRuleState Rules = null!;
     public string WorldId = string.Empty;
     public string WorldName = string.Empty;
 
@@ -25,6 +26,7 @@ internal sealed class ConnectionApprovePacket : IPacket
     {
         writer.WriteString(WorldId);
         writer.WriteString(WorldName);
+        WorldRulesPacket.Write(writer, Rules);
         writer.WritePackedBool(InitialJoin);
         writer.WritePackedBool(AllowCheats);
 
@@ -49,6 +51,7 @@ internal sealed class ConnectionApprovePacket : IPacket
     {
         WorldId = reader.ReadPooledString()!;
         WorldName = reader.ReadPooledString()!;
+        Rules = WorldRulesPacket.Read(reader);
         InitialJoin = reader.ReadPackedBool();
         AllowCheats = reader.ReadPackedBool();
 

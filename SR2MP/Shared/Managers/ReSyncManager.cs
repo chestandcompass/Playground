@@ -45,6 +45,7 @@ internal sealed class ReSyncManager
 
         var approvePacket = new ConnectionApprovePacket
         {
+            Rules = HostWorldRules.Capture(),
             InitialJoin = false,
             PlayerId = playerId,
             OtherPlayers = Array.ConvertAll(PlayerManager.GetAllPlayers().ToArray(),
@@ -140,6 +141,7 @@ internal sealed class ReSyncManager
         {
             var approvePacket = new ConnectionApprovePacket
             {
+                Rules = HostWorldRules.Capture(),
                 InitialJoin = false,
                 PlayerId = client.PlayerId,
                 OtherPlayers = Array.ConvertAll(PlayerManager.GetAllPlayers().ToArray(),

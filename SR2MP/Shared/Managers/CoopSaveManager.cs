@@ -65,6 +65,7 @@ internal static class CoopSaveManager
         if (role is not ("host" or "guest" or "singleplayer")) throw new ArgumentException(nameof(role));
         originalDirectory ??= Storage.savePath;
         Role = role;
+        HostWorldRules.Reset();
         GuestWorld = null;
         guestWasBound = false;
         restorePending = false;
@@ -79,6 +80,7 @@ internal static class CoopSaveManager
         // actually started. That must not switch new multiplayer IO to singleplayer.
         if (!sessionActive || !Enabled || originalDirectory == null) return;
         sessionActive = false;
+        HostWorldRules.Reset();
         Role = "singleplayer";
         GuestWorld = null;
         guestWasBound = false;

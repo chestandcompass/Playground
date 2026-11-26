@@ -13,6 +13,13 @@ internal sealed class ConnectionApproveHandler : BasePacketHandler<ConnectionApp
 {
     protected override bool Handle(ConnectionApprovePacket packet, IPEndPoint? _)
     {
+        try { HostWorldRules.Apply(packet.Rules); }
+        catch (Exception ex)
+        {
+            SrLogger.LogError($"Host world rules could not be applied; disconnecting: {ex}");
+            Main.Client.Disconnect();
+            return false;
+        }
         if (packet.InitialJoin)
         {
             try

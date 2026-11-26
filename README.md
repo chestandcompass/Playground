@@ -78,3 +78,8 @@ Pole dopasowuje sie do tresci. Brakujace znaki polskie sa renderowane przez dyna
 Naprawiono przyciski Continue i Back po wpisaniu imienia: edytor nie odbiera juz stale fokusu przyciskom, a natywne zatwierdzanie wybiera wlasciwa akcje. Klikniecie Continue, klikniecie Back bez zapisu edycji, Enter oraz ponowne otwarcie z zapamietanym imieniem sprawdzono w grze.
 
 W Moje swiaty mozna zmienic nazwe swiata multiplayer. Etykieta jest osobnymi metadanymi: nie zmienia natywnego identyfikatora swiata, plikow .sav ani przypisania profili gosci. Import singleplayer pozostaje osobna, swiadoma operacja. Testy zapisu etykiet i izolacji danych przechodza; scenariusz goscia na drugim komputerze po zmianie nazwy nadal wymaga walidacji.
+
+## Zasady swiata ustala host
+Od preview 13 Tarr, dzikie slime i mnoznik obrazen sa przesylane od hosta do goscia przy dolaczeniu i po zmianie zasad. U goscia te opcje sa tylko do odczytu z opisem "Controlled by the host". Zmiana imienia, grafiki, dzwieku, sterowania, napisow i samouczkow pozostaje lokalna. Reguly maja numer rewizji, aby opozniony pakiet nie przywrocil starszego ustawienia. Host i gosc musza miec to samo wydanie Playground.
+
+Walidacja preview 13: 79 testow automatycznych PASS i 7 kontroli na rzeczywistych modelach gry PASS: serializacja pakietu, zmiany trzech regul przez hosta, wylaczone wiersze goscia, blokada zmian/resetu, zastosowanie ustawien hosta, odrzucenie starszej rewizji i zachowanie osobnego samouczka. Testowano jedna instancje z symulowana rola goscia, bez drugiej kopii gry. Pelna proba sieciowa miedzy dwoma komputerami pozostaje do wykonania.

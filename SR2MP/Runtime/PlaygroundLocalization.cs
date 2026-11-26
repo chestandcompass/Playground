@@ -38,6 +38,7 @@ internal static class PlaygroundLocalization
     private const string Translations = @"Play with a friend|Graj ze znajomym|Mit Freunden spielen|Jouer avec un ami|Jugar con un amigo|Jogar com um amigo|Играть с другом|フレンドと遊ぶ|친구와 플레이|与好友游玩
 Create a world|Utwórz świat|Welt erstellen|Créer un monde|Crear un mundo|Criar um mundo|Создать мир|ワールドを作成|월드 만들기|创建世界
 My worlds|Moje światy|Meine Welten|Mes mondes|Mis mundos|Meus mundos|Мои миры|マイワールド|내 월드|我的世界
+Controlled by the host|Ustawia host|Vom Host festgelegt|Contrôlé par l’hôte|Controlado por el anfitrión|Controlado pelo anfitrião|Настраивает хост|ホストが設定します|호스트가 설정합니다|由房主控制
 World name|Nazwa świata|Weltname|Nom du monde|Nombre del mundo|Nome do mundo|Название мира|ワールド名|월드 이름|世界名称
 Enter a world name|Wpisz nazwę świata|Weltnamen eingeben|Saisir un nom de monde|Escribe un nombre de mundo|Digite um nome de mundo|Введите название мира|ワールド名を入力|월드 이름 입력|输入世界名称
 Rename multiplayer world|Zmień nazwę świata multiplayer|Mehrspielerwelt umbenennen|Renommer le monde multijoueur|Renombrar mundo multijugador|Renomear mundo multijogador|Переименовать сетевой мир|マルチプレイのワールド名を変更|멀티플레이 월드 이름 변경|重命名多人世界

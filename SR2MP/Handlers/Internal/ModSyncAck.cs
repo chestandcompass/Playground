@@ -64,6 +64,7 @@ internal sealed class ModSyncAckHandler : BasePacketHandler<ModSyncPacket>
         {
             WorldId = world.id,
             WorldName = world.name,
+            Rules = HostWorldRules.Capture(),
             InitialJoin = true,
             PlayerId = packet.PlayerId,
             OtherPlayers = Array.ConvertAll(PlayerManager.GetAllPlayers().ToArray(),

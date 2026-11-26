@@ -63,7 +63,22 @@ try
     Check(WorldLabels.Read(labels, "../outside", "fallback").Length == 40 && File.Exists(Path.Combine(labels, CoopFiles.Key("../outside") + ".txt")), "world names are bounded and world IDs cannot escape metadata storage");
     File.WriteAllText(labelKey, new string('x', 1025));
     Check(WorldLabels.Read(labels, "1", "native") == "native", "oversized world metadata falls back to the native caption");
-    Check(PlaygroundLocalization.Keys.Count() == 48, "all 48 native menu, world name, player name, LAN and update messages are in the translation catalog");
+    var ruleValues = new[] { "on", "off", "100" };
+    var packetTypes = Enum.GetValues<SR2MP.Packets.Utils.PacketType>();
+    Check(packetTypes.Distinct().Count() == packetTypes.Length, "packet types including host world rules have unique wire IDs");
+    var rules = new WorldRuleState(1, ruleValues);
+    ruleValues[0] = "off";
+    Check(rules.Values[0] == "on", "world rule snapshots detach from mutable source data");
+    Check(new WorldRuleState(2, rules.Values).IsNewerThan(rules) && !rules.IsNewerThan(rules), "only newer host rule revisions can replace current settings");
+    Check(!rules.IsNewerThan(new WorldRuleState(3, rules.Values)), "late initial or resync rules cannot roll back newer host changes");
+    Check(rules.SameValues(new WorldRuleState(2, rules.Values)) && !rules.SameValues(new WorldRuleState(2, new[] { "off", "off", "100" })), "host broadcasts are based on actual rule changes");
+    foreach (var invalid in new[] { Array.Empty<string>(), new[] { "on", "off" }, new[] { "on", "off", "100", "personal setting" }, new[] { "on", "off", "" }, new[] { "on", "off", new string('x', 129) }, new[] { "on", "off", "10\n0" } })
+    {
+        var rejected = false;
+        try { _ = new WorldRuleState(1, invalid); } catch (InvalidDataException) { rejected = true; }
+        Check(rejected, "malformed or extra host rule fields are rejected");
+    }
+    Check(PlaygroundLocalization.Keys.Count() == 49, "all 49 native menu and host rule messages are in the translation catalog");
     foreach (var language in PlaygroundLocalization.Languages)
         Check(PlaygroundLocalization.Keys.All(key => !string.IsNullOrWhiteSpace(PlaygroundLocalization.Translate(language, key))), "complete menu translations: " + language);
     Check(PlaygroundLocalization.Translate("pt-BR", "Back") == "Voltar", "regional locale selects its language translation");
