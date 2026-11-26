@@ -11,6 +11,7 @@ internal abstract class BasePlayerLeaveHandler : BasePacketHandler<PlayerLeavePa
 {
     protected static void RemovePlayerData(string playerId)
     {
+        PlayerCosmetics.Forget(playerId);
         PlayerManager.RemovePlayer(playerId);
 
         if (PlayerObjects.TryGetValue(playerId, out var playerObj))

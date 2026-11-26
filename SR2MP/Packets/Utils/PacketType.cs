@@ -7,6 +7,7 @@ internal enum PacketType : byte
     StorageState = 118,
     GadgetPlacement = 119,
     GadgetPlacementResult = 123,
+    PlayerCosmetics = 124,
     Connect = 1,                  // Client -> Server                             Low (manual)                          Try to connect to Server
     ConnectionApprove = 2,        // Server -> Client                             Low (depends on connect)              Initiate Player Join
     ConnectionDeny = 3,           // Server -> Client                             Low (can be manual)                   On Connection Deny

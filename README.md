@@ -90,3 +90,10 @@ Naprawiono ponowna rejestracje magazynow po wczytaniu swiata, usuwanie starych m
 Nowe stawianie gadzetow z puli jest rozstrzygane przez hosta: jedna sztuka oznacza jedna zaakceptowana prosbe, rezerwacje stanu i jeden obiekt. Powtorzenie tej samej prosby nie zuzywa kolejnej sztuki; nieudane tworzenie zwraca rezerwacje. Przenoszenie juz podniesionych gadzetow pozostaje na natywnej sciezce. Zachowane sa czas ladowania gadzetu i zdarzenie jego postawienia.
 
 Walidacja: 87 testow automatycznych PASS oraz 12 sprawdzen w jednej instancji gry PASS (9 magazynow, 3 stawiania gadzetow). Obejmuje rzeczywisty format pakietow, podmiane magazynu, aktualizacje przed rejestracja, pelny pierwszy slot, model bez komponentu sceny, dwie prosby o ostatnia sztuke i ponowienie prosby. To nadal wersja eksperymentalna: pelna proba dwoch PC oraz pozostale przypadki rownoczesnych interakcji wymagaja dalszej walidacji.
+
+## Preview 15: osobny wyglad Vacpacka
+Wybrany w natywnym menu gry styl Vacpacka jest przesylany osobno dla kazdego gracza. Zmiana lokalnego stylu nie zmienia pozostalych modeli. Host uzgadnia stany przy dolaczaniu i w trakcie gry; wyglad czeka na model, jezeli pakiet dotrze przed jego utworzeniem. Przesylane sa tylko identyfikatory wbudowanych stylow, bez materialow czy plikow od innych graczy. Serwer przypisuje zmiane do nadawcy na podstawie polaczenia.
+
+Styl goscia jest zapamietywany lokalnie w `vac-style.txt` obok jego profilu danego swiata hosta i przywracany po ponownym dolaczeniu. Zmiana nazwy swiata nie zmienia tego przypisania. Gra 1.3.0 oferuje style Vacpacka; Playground nie dodaje edytora stroju ani koloru Beatrix.
+
+Walidacja preview 15: 87 testow automatycznych PASS oraz 29 sprawdzen kosmetyki w jednej instancji gry PASS (23 style, niezalezne materialy dwoch modeli, brak przemalowywania przez lokalny wybor, powrot do prostego stylu, serializacja, opozniony model/idempotencja, odrzucenie nieznanego stylu). Pelna sesja dwoch PC nadal wymaga sprawdzenia.

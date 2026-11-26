@@ -69,6 +69,7 @@ internal static class CoopSaveManager
         StorageSynchronization.Reset();
         NetworkAmmoManager.ResetStorageRegistry();
         HostGadgetPlacement.Reset();
+        PlayerCosmetics.Reset();
         GuestWorld = null;
         guestWasBound = false;
         restorePending = false;
@@ -87,6 +88,7 @@ internal static class CoopSaveManager
         StorageSynchronization.Reset();
         NetworkAmmoManager.ResetStorageRegistry();
         HostGadgetPlacement.Reset();
+        PlayerCosmetics.Reset();
         Role = "singleplayer";
         GuestWorld = null;
         guestWasBound = false;

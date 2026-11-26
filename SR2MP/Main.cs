@@ -219,6 +219,7 @@ public sealed class Main : MelonMod
         PlayerNameEntry.Update();
         HostWorldRules.Update();
         StorageSynchronization.Update();
+        PlayerCosmetics.Update();
         MenuSmokeTest.Update();
     }
 

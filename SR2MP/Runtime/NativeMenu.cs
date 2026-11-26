@@ -588,6 +588,7 @@ internal static class NativeMenu
             case "rules-smoke": HostWorldRules.SmokeTest(); break;
             case "storage-smoke": StorageSynchronization.SmokeTest(); break;
             case "gadget-smoke": HostGadgetPlacement.SmokeTest(); break;
+            case "cosmetics-smoke": PlayerCosmetics.SmokeTest(); break;
             case "play-selected": root!._models[0].InvokeBehavior(); break;
             case "back": Back(); break;
             case "home": ShowHome(); break;
