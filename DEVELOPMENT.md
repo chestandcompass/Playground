@@ -6,10 +6,12 @@
 - Your own legitimate Slime Rancher 2 1.3.0 installation.
 - MelonLoader 0.7.3. Launch the game with the loader once to generate local IL2CPP references.
 
-    ./Prepare-References.ps1 -GameDirectory 'path-to-game'
-    dotnet build SR2MP -c Release
-    dotnet run --project tests/StorageTests -c Release
-    ./Build-Installer.ps1 -GameDirectory 'path-to-game'
+```powershell
+./Prepare-References.ps1 -GameDirectory 'path-to-game'
+dotnet build SR2MP -c Release
+dotnet run --project tests/StorageTests -c Release
+./Build-Installer.ps1 -GameDirectory 'path-to-game'
+```
 
 Game libraries must remain local and must not be committed or distributed. The installer includes the loader and the required Microsoft .NET 6 runtime.
 
