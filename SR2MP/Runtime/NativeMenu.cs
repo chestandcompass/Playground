@@ -72,6 +72,9 @@ internal static class NativeMenu
     private static bool pendingHost;
     private static bool navigationPending;
     private static int pageRevision;
+    private static bool lanVisible, lanRefreshPending;
+    private static int lanOffset;
+    private static string lanSignature = "";
     private static readonly Dictionary<string, string> localizedSources = new();
 
     internal static LocalizedString Text(LocalizedString template, string text)
@@ -110,6 +113,7 @@ internal static class NativeMenu
         originals.Clear();
         keepAlive.Clear();
         customPage = false;
+        lanVisible = false;
         homeVisible = false;
         pageRevision++;
         foreach (var model in menu._models)
@@ -139,6 +143,7 @@ internal static class NativeMenu
         if (root == null) return;
         homeVisible = false;
         customPage = true;
+        lanVisible = false;
         pageRevision++;
         var models = new Il2CppSystem.Collections.Generic.List<ButtonBehaviorModel>();
         foreach (var (text, action) in options) models.Add(Item(text, action));
@@ -244,9 +249,65 @@ internal static class NativeMenu
         ("Back", ShowWorlds));
 
     private static void ShowJoin() => Page(
+        ("Find games on LAN", ShowLanGames),
         ("Paste code and join", JoinCopiedCode),
         ("How do I get a code?", ShowJoinHelp),
         ("Back", ShowHome));
+
+    private static void ShowLanGames()
+    {
+        lanOffset = 0;
+        LanDiscovery.StartBrowsing();
+        RenderLanGames();
+    }
+
+    private static string LanSignature() => (LanDiscovery.Searching ? "search" : "done") + (LanDiscovery.Failed ? "error" : "")
+        + string.Join("|", LanDiscovery.Worlds.OrderBy(w => w.Id).Select(w => w.Id + ":" + w.Name + ":" + w.Address + ":" + w.Port));
+
+    private static void RenderLanGames()
+    {
+        var options = new List<(string, Action)>();
+        var worlds = LanDiscovery.Worlds.OrderBy(w => w.Name, StringComparer.CurrentCulture).ThenBy(w => w.Id).ToArray();
+        if (lanOffset >= worlds.Length) lanOffset = 0;
+        foreach (var world in worlds.Skip(lanOffset).Take(3))
+            options.Add(("Join: " + world.Name, () =>
+            {
+                // Do not load a staging world for an entry that has already expired.
+                var current = LanDiscovery.Worlds.FirstOrDefault(w => w.Id == world.Id && LanDiscovery.Now - w.LastSeen < 4);
+                if (current == null) { RenderLanGames(); return; }
+                StartJoin(JoinCode.Encode(current.Address, current.Port));
+            }));
+        if (worlds.Length == 0) options.Add((LanDiscovery.Failed ? "LAN search unavailable — try again"
+            : LanDiscovery.Searching ? "Searching for LAN games..." : "No games found — same Wi-Fi and version?", ShowLanGames));
+        if (worlds.Length > 3) options.Add(("Next games", () => { lanOffset = (lanOffset + 3) % worlds.Length; RenderLanGames(); }));
+        options.Add(("Refresh LAN games", ShowLanGames));
+        options.Add(("Back", ShowJoin));
+        Page(options.ToArray());
+        lanVisible = true;
+        lanSignature = LanSignature();
+    }
+
+    internal static void UpdateLanBrowser()
+    {
+        if (!lanVisible || root == null || !root.gameObject.activeInHierarchy)
+        {
+            lanVisible = false;
+            if (LanDiscovery.Browsing) LanDiscovery.StopBrowsing();
+            return;
+        }
+        if (lanRefreshPending || navigationPending || lanSignature == LanSignature()) return;
+        lanRefreshPending = true;
+        var revision = pageRevision;
+        Navigate(() =>
+        {
+            lanRefreshPending = false;
+            if (!lanVisible || navigationPending || revision != pageRevision) return;
+            // New or expired hosts update the list, not every heartbeat packet.
+            var focus = root._listView.Interface.FocusedIndex;
+            RenderLanGames();
+            root._listView.Interface.FocusedIndex = Math.Min(focus, root._models.Count - 1);
+        }, false);
+    }
 
     private static void ShowImportWorlds()
     {
@@ -291,6 +352,13 @@ internal static class NativeMenu
                 ("Back", ShowJoin));
             return;
         }
+        StartJoin(code);
+    }
+
+    private static void StartJoin(string code)
+    {
+        lanVisible = false;
+        LanDiscovery.StopBrowsing();
         CoopSaveManager.SelectRole("guest");
         pendingJoin = code;
         // A staging world is created once; the child never selects or manages a save file.
@@ -330,6 +398,7 @@ internal static class NativeMenu
         pendingHost = false;
         pendingJoin = null;
         homeVisible = false;
+        lanVisible = false;
         CoopSaveManager.SelectRole("singleplayer");
         customPage = false;
         root!.CreateModels();
@@ -357,6 +426,7 @@ internal static class NativeMenu
                 break;
             case "worlds": ShowWorlds(); break;
             case "join": ShowJoin(); break;
+            case "lan": ShowLanGames(); break;
             case "import": ShowImportWorlds(); break;
             case "join-paste": JoinCopiedCode(); break;
             case "join-help": ShowJoinHelp(); break;

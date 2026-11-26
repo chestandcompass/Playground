@@ -199,7 +199,12 @@ public sealed class Main : MelonMod
         }
     }
 
-    public override void OnUpdate() => MenuSmokeTest.Update();
+    public override void OnUpdate()
+    {
+        LanDiscovery.Update();
+        NativeMenu.UpdateLanBrowser();
+        MenuSmokeTest.Update();
+    }
 
     /// <inheritdoc/>
     public void AfterGameContext(GameContext gameContext)

@@ -68,5 +68,12 @@ Update scheduled after exit|Aktualizacja po wyjściu z gry|Update nach dem Beend
 You're up to date|Masz aktualną wersję|Du bist auf dem neuesten Stand|Le jeu est à jour|Tienes la última versión|Você está na versão mais recente|Установлена последняя версия|最新バージョンです|최신 버전이에요|已是最新版本
 Update needs a different game version|Aktualizacja wymaga innej wersji gry|Update benötigt eine andere Spielversion|Une autre version du jeu est requise|Se necesita otra versión del juego|Requer outra versão do jogo|Нужна другая версия игры|別のゲームバージョンが必要です|다른 게임 버전이 필요해요|更新需要其他游戏版本
 Try checking for updates again|Ponów sprawdzanie aktualizacji|Erneut nach Updates suchen|Réessayer la recherche de mises à jour|Volver a buscar actualizaciones|Buscar atualizações novamente|Повторить проверку обновлений|更新をもう一度確認|업데이트 다시 확인|重新检查更新
-Check for updates|Sprawdź aktualizacje|Nach Updates suchen|Rechercher des mises à jour|Buscar actualizaciones|Buscar atualizações|Проверить обновления|更新を確認|업데이트 확인|检查更新";
+Check for updates|Sprawdź aktualizacje|Nach Updates suchen|Rechercher des mises à jour|Buscar actualizaciones|Buscar atualizações|Проверить обновления|更新を確認|업데이트 확인|检查更新
+Find games on LAN|Znajdź gry w sieci LAN|LAN-Spiele finden|Trouver des parties en LAN|Buscar partidas en LAN|Buscar jogos na rede local|Найти игры в локальной сети|LAN内のゲームを探す|LAN 게임 찾기|查找局域网游戏
+Searching for LAN games...|Szukam gier w sieci LAN...|Suche nach LAN-Spielen...|Recherche de parties en LAN...|Buscando partidas en LAN...|Buscando jogos na rede local...|Поиск игр в локальной сети...|LAN内のゲームを検索中...|LAN 게임 검색 중...|正在查找局域网游戏……
+No games found — same Wi-Fi and version?|Brak gier — ta sama sieć Wi-Fi i wersja?|Keine Spiele – gleiches WLAN und gleiche Version?|Aucune partie — même Wi-Fi et même version ?|Sin partidas — ¿misma Wi-Fi y versión?|Nenhum jogo — mesma rede Wi-Fi e versão?|Нет игр — одна сеть Wi-Fi и версия?|見つかりません — 同じWi-Fiとバージョンですか？|게임이 없어요 — 같은 Wi-Fi와 버전인가요?|未找到游戏 — 是否使用同一 Wi-Fi 和版本？
+LAN search unavailable — try again|Wyszukiwanie LAN niedostępne — ponów|LAN-Suche nicht verfügbar – erneut versuchen|Recherche LAN indisponible — réessayer|Búsqueda LAN no disponible — reintentar|Busca local indisponível — tentar novamente|Поиск в сети недоступен — повторить|LAN検索ができません — もう一度試す|LAN 검색 불가 — 다시 시도|局域网搜索不可用 — 请重试
+Next games|Kolejne gry|Weitere Spiele|Parties suivantes|Más partidas|Próximos jogos|Другие игры|次のゲーム|다음 게임|更多游戏
+Refresh LAN games|Odśwież gry w LAN|LAN-Spiele aktualisieren|Actualiser les parties LAN|Actualizar partidas LAN|Atualizar jogos locais|Обновить список игр|LANのゲームを更新|LAN 게임 새로고침|刷新局域网游戏
+Join: |Dołącz: |Beitreten: |Rejoindre : |Unirse: |Entrar: |Войти: |参加：|참가: |加入：";
 }

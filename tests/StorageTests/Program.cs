@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Sockets;
 using SR2MP.Runtime;
 
+if (LanSmoke.Run(args)) return;
+
 var root = Path.Combine(Path.GetTempPath(), "CompassCoopTests-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 var passed = 0;
@@ -15,6 +17,7 @@ void Check(bool value, string message)
 }
 try
 {
+    LanDiscoveryChecks.Run(Check);
     var steamRoot = Path.Combine(root, "Steam");
     var externalLibrary = Path.Combine(root, "Gry Łąka", "SteamLibrary");
     var externalGame = Path.Combine(externalLibrary, "steamapps", "common", "Custom SR2 Folder");
@@ -33,7 +36,7 @@ try
     Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot, steamRoot }, new[] { externalGame }).Length == 1, "duplicate Steam registry roots do not trigger a manual selection");
     File.Delete(Path.Combine(externalGame, "GameAssembly.dll"));
     Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot }, new[] { externalGame }).Length == 0, "incomplete game installs are not selected automatically");
-    Check(PlaygroundLocalization.Keys.Count() == 34, "all 34 native menu and update messages are in the translation catalog");
+    Check(PlaygroundLocalization.Keys.Count() == 41, "all 41 native menu, LAN and update messages are in the translation catalog");
     foreach (var language in PlaygroundLocalization.Languages)
         Check(PlaygroundLocalization.Keys.All(key => !string.IsNullOrWhiteSpace(PlaygroundLocalization.Translate(language, key))), "complete menu translations: " + language);
     Check(PlaygroundLocalization.Translate("pt-BR", "Back") == "Voltar", "regional locale selects its language translation");

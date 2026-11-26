@@ -94,6 +94,7 @@ public sealed class SR2MPServer
 
             NetworkManager.Start(port, enableIPv6);
             Port = port;
+            LanDiscovery.StartHosting();
             timeoutTimer = new Timer(CheckClientTimeouts, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
             InvokeServerStarted();
             MultiplayerUI.Instance.RegisterSystemMessage(
@@ -209,6 +210,7 @@ public sealed class SR2MPServer
 
     internal void Close()
     {
+        LanDiscovery.StopHosting();
         if (!NetworkManager.IsRunning)
             return;
 
