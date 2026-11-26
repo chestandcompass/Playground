@@ -90,6 +90,29 @@ internal static class CoopSaveManager
 
     internal static void MarkSessionStarted() => sessionActive = Enabled;
 
+    private static string HostLabelsDirectory
+        => Path.Combine(Root, "host", Profile, localAccount ?? throw new InvalidOperationException("No host account."), "WorldLabels");
+
+    internal static string HostDisplayName(string gameName, string fallback)
+    {
+        if (Role != "host" || localAccount == null) return fallback;
+        return WorldLabels.Read(HostLabelsDirectory, gameName, fallback);
+    }
+
+    internal static void RenameHostWorld(string gameName, string label)
+    {
+        if (Role != "host" || GameHelpers.inGame || Main.Server.IsRunning || Main.Client.IsConnected || localAccount == null)
+            throw new InvalidOperationException("Return to the multiplayer world menu before renaming.");
+        var expected = Path.GetFullPath(Path.Combine(Root, "host", Profile, localAccount, "Saves"));
+        if (!string.Equals(Path.GetFullPath(Storage.savePath).TrimEnd(Path.DirectorySeparatorChar), expected, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("World labels are restricted to multiplayer host storage.");
+        var exists = false;
+        foreach (var group in GameContext.Instance.AutoSaveDirector.AvailableGamesByGameName())
+            if (group.Key == gameName) { exists = true; break; }
+        if (!exists) throw new InvalidOperationException("The multiplayer world no longer exists.");
+        WorldLabels.Write(HostLabelsDirectory, gameName, label);
+    }
+
     internal static void DeleteHostWorld(string gameName)
     {
         if (Role != "host" || GameHelpers.inGame || Main.Server.IsRunning || Main.Client.IsConnected || localAccount == null)
@@ -142,7 +165,7 @@ internal static class CoopSaveManager
         var saveName = metadata.Value.GameName;
         if (string.IsNullOrEmpty(saveName)) throw new InvalidOperationException("Load a host world first.");
         var id = CoopFiles.Key(SR2MP.Shared.Utils.PlayerIdGenerator.GeneratePersistentPlayerId() + "|" + Profile + "|" + saveName);
-        return (id, summary == null ? saveName : summary.DisplayName);
+        return (id, HostDisplayName(saveName, summary == null ? saveName : summary.DisplayName));
     }
 
     internal static void BindGuest(string id, string name)

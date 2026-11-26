@@ -7,7 +7,7 @@ namespace SR2MP.Shared.Utils;
 internal static class PlayerNames
 {
     internal const int MaxCharacters = 24;
-    internal static string Normalize(string? value)
+    internal static string Normalize(string? value, int maxCharacters = MaxCharacters)
     {
         var cleaned = new StringBuilder();
         foreach (var rune in (value ?? "").EnumerateRunes())
@@ -21,7 +21,8 @@ internal static class PlayerNames
         }
         var normalized = cleaned.ToString().Normalize(NormalizationForm.FormC).Trim();
         var elements = StringInfo.ParseCombiningCharacters(normalized);
-        if (elements.Length > MaxCharacters) normalized = normalized.Substring(0, elements[MaxCharacters]).TrimEnd();
+        if (maxCharacters < 1 || maxCharacters > 80) throw new ArgumentOutOfRangeException(nameof(maxCharacters));
+        if (elements.Length > maxCharacters) normalized = normalized.Substring(0, elements[maxCharacters]).TrimEnd();
         return normalized;
     }
 

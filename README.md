@@ -73,3 +73,8 @@ Od preview 10 dolaczanie z LAN lub kodu nie otwiera ustawien nowego swiata. Play
 Przed utworzeniem/otwarciem swiata hosta oraz dolaczeniem z LAN/kodu pojawia sie pole **Your name / Twoje imie** z natywnymi przyciskami Dalej/Wroc. Wpisana i zatwierdzona nazwa jest zapamietywana lokalnie w preferencjach Playground i podpowiadana przy nastepnym razie. Enter zatwierdza, Escape anuluje. Puste imie nie przechodzi dalej, dlugosc jest ograniczona do 24 znakow. Imie trafia do istniejacych nazw nad postaciami i znacznikow; identyfikator gracza i przypisanie zapisow nie zmieniaja sie.
 Pole dopasowuje sie do tresci. Brakujace znaki polskie sa renderowane przez dynamiczny fallback z systemowej czcionki Windows; pliki fontow nie sa dystrybuowane. Klawiature, Enter, przycisk Dalej, polskie znaki, zapamietywanie i anulowanie sprawdzono w grze. Pelna sesja dwoch PC z nowymi nazwami nie byla jeszcze sprawdzona.
 
+
+## Preview 12: formularze i nazwy swiatow
+Naprawiono przyciski Continue i Back po wpisaniu imienia: edytor nie odbiera juz stale fokusu przyciskom, a natywne zatwierdzanie wybiera wlasciwa akcje. Klikniecie Continue, klikniecie Back bez zapisu edycji, Enter oraz ponowne otwarcie z zapamietanym imieniem sprawdzono w grze.
+
+W Moje swiaty mozna zmienic nazwe swiata multiplayer. Etykieta jest osobnymi metadanymi: nie zmienia natywnego identyfikatora swiata, plikow .sav ani przypisania profili gosci. Import singleplayer pozostaje osobna, swiadoma operacja. Testy zapisu etykiet i izolacji danych przechodza; scenariusz goscia na drugim komputerze po zmianie nazwy nadal wymaga walidacji.

@@ -17,12 +17,21 @@ internal static class PlayerNameEntry
     private static TMP_Text? nativeLabel;
     private static Action? confirm, cancel;
     private static int generation;
+    private static string heading = "Your name", hint = "Enter your name";
+    private static int maximumLength = PlayerNames.MaxCharacters;
     internal static bool IsOpen { get; private set; }
     private static string L(string text) => PlaygroundLocalization.Translate(LocalizationSettings.SelectedLocale?.Identifier.Code, text);
 
     internal static void Open(Action accepted, Action cancelled)
+        => Open("Your name", "Enter your name", Main.HasPlayerName ? Main.RawUsername : "", PlayerNames.MaxCharacters, accepted, cancelled);
+
+    internal static void OpenWorld(string initial, Action accepted, Action cancelled)
+        => Open("World name", "Enter a world name", initial, WorldLabels.MaxCharacters, accepted, cancelled);
+
+    private static void Open(string titleKey, string hintKey, string initial, int limit, Action accepted, Action cancelled)
     {
         Close();
+        heading = titleKey; hint = hintKey; maximumLength = limit;
         IsOpen = true;
         confirm = accepted; cancel = cancelled;
         var revision = generation;
@@ -31,7 +40,7 @@ internal static class PlayerNameEntry
         {
             yield return null; // The native list must finish binding its three rows.
             if (!IsOpen || revision != generation) yield break;
-            var key = "playground." + CoopFiles.Key("Your name");
+            var key = "playground." + CoopFiles.Key(heading);
             var button = Resources.FindObjectsOfTypeAll<MainMenuButton>().FirstOrDefault(b => b.gameObject.activeInHierarchy
                 && b._label.StringReference.TableEntryReference.Key == key);
             if (button == null) { Close(); NativeMenu.ShowError(); yield break; }
@@ -48,7 +57,7 @@ internal static class PlayerNameEntry
             input.targetGraphic = background;
             input.transition = Selectable.Transition.None;
             input.lineType = TMP_InputField.LineType.SingleLine;
-            input.characterLimit = PlayerNames.MaxCharacters;
+            input.characterLimit = maximumLength;
             input.richText = false;
             var viewport = new GameObject("Text viewport");
             viewport.transform.SetParent(editor.transform, false);
@@ -60,13 +69,13 @@ internal static class PlayerNameEntry
             input.textComponent = text;
             input.onSubmit.AddListener(new Action<string>(_ => Submit()));
             var placeholder = Label("Name placeholder", viewport.transform, nativeLabel);
-            placeholder.text = L("Enter your name");
+            placeholder.text = L(hint);
             placeholder.color = new Color(1, 1, 1, 0.65f);
             input.placeholder = placeholder;
-            input.text = Main.HasPlayerName ? Main.RawUsername : "";
+            input.text = initial;
             var title = Label("Name heading", button.transform, nativeLabel);
             header = title.gameObject;
-            title.text = L("Your name");
+            title.text = L(heading);
             title.fontSize = 26;
             var titleRect = title.rectTransform;
             titleRect.anchorMin = new Vector2(0, 1); titleRect.anchorMax = new Vector2(1, 1);
@@ -107,11 +116,16 @@ internal static class PlayerNameEntry
 
     internal static bool Save()
     {
-        if (input == null) return false;
-        var name = PlayerNames.Normalize(input.text);
-        if (name.Length == 0) { Focus(); return false; }
+        if (!Read(out var name)) return false;
         Main.SetPlayerName(name);
         Close();
+        return true;
+    }
+
+    internal static bool Read(out string name)
+    {
+        name = input == null ? "" : PlayerNames.Normalize(input.text, maximumLength);
+        if (name.Length == 0) { Focus(); return false; }
         return true;
     }
 
@@ -127,12 +141,25 @@ internal static class PlayerNameEntry
         if (!IsOpen || input == null) return;
         // Measure the field's actual caption (or placeholder) with the existing
         // native button fitter, so this pill also grows to fit its content.
-        if (nativeLabel != null) nativeLabel.text = input.text.Length == 0 ? L("Enter your name") : PlayerNames.Normalize(input.text);
+        if (nativeLabel != null) nativeLabel.text = input.text.Length == 0 ? L(hint) : PlayerNames.Normalize(input.text, maximumLength);
         var keyboard = Keyboard.current;
         if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) { NativeMenu.Navigate(Cancel); return; }
-        if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
+        if (input.isFocused && keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
         { Submit(); return; }
-        if (!input.isFocused) Focus();
+        // Focus once on opening or when the name row is explicitly selected.
+        // Reclaiming focus every frame steals pointer/controller selection from
+        // the native Continue and Back rows before they can submit.
+    }
+
+    internal static void SubmitMenuRow(int index)
+    {
+        if (!IsOpen) return;
+        switch (index)
+        {
+            case 0: Focus(); break;
+            case 1: Submit(); break;
+            case 2: NativeMenu.Navigate(Cancel); break;
+        }
     }
 
     private static void Submit()
@@ -171,5 +198,12 @@ internal static class PlayerNameEntry
 [HarmonyLib.HarmonyPatch(typeof(MainMenuLandingRootUI), nameof(MainMenuLandingRootUI.UnityEngine_EventSystems_ISubmitHandler_OnSubmit))]
 internal static class NameEntrySubmitPatch
 {
-    internal static bool Prefix() => !PlayerNameEntry.IsOpen;
+    internal static bool Prefix(MainMenuLandingRootUI __instance)
+    {
+        if (!PlayerNameEntry.IsOpen) return true;
+        // Keep the native list's selected action usable while an editor exists.
+        // Only the name row is handled as text input, not as a normal menu action.
+        PlayerNameEntry.SubmitMenuRow(__instance._listView.Interface.FocusedIndex);
+        return false;
+    }
 }

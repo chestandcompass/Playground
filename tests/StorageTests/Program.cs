@@ -43,10 +43,31 @@ try
     Check(PlayerNames.Normalize("<b>Ola</b>") == "＜b＞Ola＜/b＞", "player names cannot inject rich text into labels");
     Check(PlayerNames.SanitizeWire("<color=#FFFFFF>Ola</color>") == "<color=#FFFFFF>Ola</color>", "network names preserve only the existing valid color wrapper");
     Check(PlayerNames.SanitizeWire("<color=#FFFFFF><size=99>Ola</size></color>").Contains("＜size=99＞"), "nested network name markup is rendered as plain text");
-    Check(PlaygroundLocalization.Keys.Count() == 45, "all 45 native menu, player name, LAN and update messages are in the translation catalog");
+    var labels = Path.Combine(root, "host", "WorldLabels");
+    var nativeSave = Path.Combine(root, "world_1.sav");
+    var originalBytes = new byte[] { 1, 20, 255, 42 };
+    File.WriteAllBytes(nativeSave, originalBytes);
+    Check(WorldLabels.Read(labels, "1", "1") == "1" && !Directory.Exists(labels), "unrenamed worlds use native captions without creating metadata");
+    WorldLabels.Write(labels, "1", "  Rodzinna   Łąka  ");
+    WorldLabels.Write(labels, "2", "Second world");
+    Check(WorldLabels.Read(labels, "1", "1") == "Rodzinna Łąka", "world labels persist Unicode names independently of native save names");
+    var labelKey = Path.Combine(labels, CoopFiles.Key("1") + ".txt");
+    WorldLabels.Write(labels, "1", "Renamed world");
+    Check(File.Exists(labelKey) && WorldLabels.Read(labels, "1", "1") == "Renamed world" && WorldLabels.Read(labels, "2", "2") == "Second world", "renaming updates the same world metadata and preserves other worlds");
+    Check(File.ReadAllBytes(nativeSave).SequenceEqual(originalBytes), "renaming never changes native save bytes or filenames");
+    var blankRejected = false;
+    try { WorldLabels.Write(labels, "1", " \u202e "); }
+    catch (ArgumentException) { blankRejected = true; }
+    Check(blankRejected && WorldLabels.Read(labels, "1", "1") == "Renamed world", "blank rename preserves the previous valid name");
+    WorldLabels.Write(labels, "../outside", new string('a', 60));
+    Check(WorldLabels.Read(labels, "../outside", "fallback").Length == 40 && File.Exists(Path.Combine(labels, CoopFiles.Key("../outside") + ".txt")), "world names are bounded and world IDs cannot escape metadata storage");
+    File.WriteAllText(labelKey, new string('x', 1025));
+    Check(WorldLabels.Read(labels, "1", "native") == "native", "oversized world metadata falls back to the native caption");
+    Check(PlaygroundLocalization.Keys.Count() == 48, "all 48 native menu, world name, player name, LAN and update messages are in the translation catalog");
     foreach (var language in PlaygroundLocalization.Languages)
         Check(PlaygroundLocalization.Keys.All(key => !string.IsNullOrWhiteSpace(PlaygroundLocalization.Translate(language, key))), "complete menu translations: " + language);
     Check(PlaygroundLocalization.Translate("pt-BR", "Back") == "Voltar", "regional locale selects its language translation");
+    Check(PlaygroundLocalization.Translate("pt_BR", "Back") == "Voltar", "underscore regional locales select their language instead of falling back to English");
     Check(PlaygroundLocalization.Translate("zh-Hans", "Cancel") == "取消", "Simplified Chinese locale uses Chinese translations");
     Check(PlaygroundLocalization.Translate("unknown", "Back") == "Back", "unknown locale safely falls back to English");
     Check(PlaygroundLocalization.Translate("ja", "Yes, delete: My Łąka 世界") == "削除する：My Łąka 世界", "localized deletion confirmation preserves the exact world name");

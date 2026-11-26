@@ -10,7 +10,7 @@ internal static class PlaygroundLocalization
 
     internal static string Translate(string? locale, string source)
     {
-        var language = (locale ?? "en").Split('-', '_')[0].ToLowerInvariant();
+        var language = (locale ?? "en").Split(new[] { '-', '_' }, StringSplitOptions.None)[0].ToLowerInvariant();
         var index = Array.IndexOf(Languages, language);
         if (index < 0) index = 0;
         if (Messages.TryGetValue(source, out var values)) return values[index];
@@ -38,6 +38,9 @@ internal static class PlaygroundLocalization
     private const string Translations = @"Play with a friend|Graj ze znajomym|Mit Freunden spielen|Jouer avec un ami|Jugar con un amigo|Jogar com um amigo|Играть с другом|フレンドと遊ぶ|친구와 플레이|与好友游玩
 Create a world|Utwórz świat|Welt erstellen|Créer un monde|Crear un mundo|Criar um mundo|Создать мир|ワールドを作成|월드 만들기|创建世界
 My worlds|Moje światy|Meine Welten|Mes mondes|Mis mundos|Meus mundos|Мои миры|マイワールド|내 월드|我的世界
+World name|Nazwa świata|Weltname|Nom du monde|Nombre del mundo|Nome do mundo|Название мира|ワールド名|월드 이름|世界名称
+Enter a world name|Wpisz nazwę świata|Weltnamen eingeben|Saisir un nom de monde|Escribe un nombre de mundo|Digite um nome de mundo|Введите название мира|ワールド名を入力|월드 이름 입력|输入世界名称
+Rename multiplayer world|Zmień nazwę świata multiplayer|Mehrspielerwelt umbenennen|Renommer le monde multijoueur|Renombrar mundo multijugador|Renomear mundo multijogador|Переименовать сетевой мир|マルチプレイのワールド名を変更|멀티플레이 월드 이름 변경|重命名多人世界
 Copy a singleplayer world|Skopiuj świat singleplayer|Einzelspielerwelt kopieren|Copier un monde solo|Copiar un mundo individual|Copiar mundo individual|Копировать одиночный мир|ソロのワールドをコピー|싱글플레이 월드 복사|复制单人世界
 Join a friend|Dołącz do znajomego|Freund beitreten|Rejoindre un ami|Unirse a un amigo|Entrar com um amigo|Присоединиться к другу|フレンドに参加|친구에게 참가|加入好友
 Back|Wróć|Zurück|Retour|Volver|Voltar|Назад|戻る|뒤로|返回

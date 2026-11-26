@@ -242,7 +242,7 @@ internal static class NativeMenu
             for (var i = 1; i < group.Value.Count; i++)
                 if (group.Value[i].SaveNumber > save.SaveNumber) save = group.Value[i];
             if (save.IsInvalid) continue;
-            options.Add((save.DisplayName, () => ShowWorldActions(save)));
+            options.Add((WorldName(save), () => ShowWorldActions(save)));
         }
         if (options.Count == 0) options.Add(("Create your first world", CreateHost));
         options.Add(("Back", ShowHome));
@@ -250,21 +250,39 @@ internal static class NativeMenu
     }
 
     private static void ShowWorldActions(Il2CppMonomiPark.SlimeRancher.Persist.Summary save) => Page(
-        ("Play: " + save.DisplayName, () => AskPlayerName(() =>
+        ("Play: " + WorldName(save), () => AskPlayerName(() =>
         {
             pendingHost = true;
             GameContext.Instance.AutoSaveDirector.BeginLoad(save.SaveIdentifier, null);
         }, () => ShowWorldActions(save))),
+        ("Rename multiplayer world", () => RenameWorld(save)),
         ("Delete multiplayer world", () => Page(
             // Cancel gets initial keyboard/controller focus. Removing a world always
             // requires a separate submit on the button carrying its actual name.
             ("Cancel", () => ShowWorldActions(save)),
-            ("Yes, delete: " + save.DisplayName, () =>
+            ("Yes, delete: " + WorldName(save), () =>
             {
                 CoopSaveManager.DeleteHostWorld(save.SaveIdentifier.GameName);
                 ShowWorlds();
             }))),
         ("Back", ShowWorlds));
+
+    private static string WorldName(Il2CppMonomiPark.SlimeRancher.Persist.Summary save)
+        => CoopSaveManager.HostDisplayName(save.SaveIdentifier.GameName, save.DisplayName);
+
+    private static void RenameWorld(Il2CppMonomiPark.SlimeRancher.Persist.Summary save)
+    {
+        var current = WorldName(save);
+        void Confirm()
+        {
+            if (!PlayerNameEntry.Read(out var name)) return;
+            CoopSaveManager.RenameHostWorld(save.SaveIdentifier.GameName, name);
+            PlayerNameEntry.Close();
+            ShowWorldActions(save);
+        }
+        Page(("World name", PlayerNameEntry.Focus), ("Continue", Confirm), ("Back", PlayerNameEntry.Cancel));
+        PlayerNameEntry.OpenWorld(current, Confirm, () => ShowWorldActions(save));
+    }
 
     private static void ShowJoin() => Page(
         ("Find games on LAN", ShowLanGames),
