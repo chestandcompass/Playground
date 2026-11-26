@@ -15,6 +15,24 @@ void Check(bool value, string message)
 }
 try
 {
+    var steamRoot = Path.Combine(root, "Steam");
+    var externalLibrary = Path.Combine(root, "Gry Łąka", "SteamLibrary");
+    var externalGame = Path.Combine(externalLibrary, "steamapps", "common", "Custom SR2 Folder");
+    Directory.CreateDirectory(Path.Combine(steamRoot, "steamapps"));
+    Directory.CreateDirectory(Path.Combine(externalGame, "SlimeRancher2_Data"));
+    File.WriteAllBytes(Path.Combine(externalGame, "SlimeRancher2.exe"), new byte[] { 1 });
+    File.WriteAllBytes(Path.Combine(externalGame, "GameAssembly.dll"), new byte[] { 2 });
+    var vdfPath = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
+    var escapedLibrary = externalLibrary.Replace("\\", "\\\\");
+    File.WriteAllText(vdfPath, "\"libraryfolders\" { \"1\" { \"path\" \"" + escapedLibrary + "\" } }");
+    File.WriteAllText(Path.Combine(externalLibrary, "steamapps", "appmanifest_1657630.acf"), "\"AppState\" { \"appid\" \"1657630\" \"installdir\" \"Custom SR2 Folder\" }");
+    Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot }, Array.Empty<string>()).SequenceEqual(new[] { externalGame }), "Steam discovery follows modern external-library VDF and actual manifest folder with Unicode paths");
+    File.WriteAllText(vdfPath, "\"libraryfolders\" { \"1\" \"" + escapedLibrary + "\" }");
+    Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot }, Array.Empty<string>()).SequenceEqual(new[] { externalGame }), "Steam discovery supports legacy numbered library entries");
+    Check(PlaygroundSetup.GameDiscovery.Find(Array.Empty<string>(), new[] { externalGame }).SequenceEqual(new[] { externalGame }), "Steam uninstall registry location works without a Steam root");
+    Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot, steamRoot }, new[] { externalGame }).Length == 1, "duplicate Steam registry roots do not trigger a manual selection");
+    File.Delete(Path.Combine(externalGame, "GameAssembly.dll"));
+    Check(PlaygroundSetup.GameDiscovery.Find(new[] { steamRoot }, new[] { externalGame }).Length == 0, "incomplete game installs are not selected automatically");
     Check(PlaygroundLocalization.Keys.Count() == 34, "all 34 native menu and update messages are in the translation catalog");
     foreach (var language in PlaygroundLocalization.Languages)
         Check(PlaygroundLocalization.Keys.All(key => !string.IsNullOrWhiteSpace(PlaygroundLocalization.Translate(language, key))), "complete menu translations: " + language);

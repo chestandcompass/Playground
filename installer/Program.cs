@@ -114,22 +114,35 @@ namespace PlaygroundSetup
 
         internal static string[] FindGames()
         {
-            var libraries = new List<string>();
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam"))
+            var roots = new List<string>();
+            var installed = new List<string>();
+            foreach (RegistryHive hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
+            foreach (RegistryView view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
             {
-                string steam = key == null ? null : key.GetValue("SteamPath") as string;
-                if (!String.IsNullOrWhiteSpace(steam))
+                try
                 {
-                    libraries.Add(steam);
-                    string vdf = Path.Combine(steam, @"steamapps\libraryfolders.vdf");
-                    if (File.Exists(vdf))
-                        foreach (Match match in Regex.Matches(File.ReadAllText(vdf), "\"path\"\\s+\"([^\"]+)\""))
-                            libraries.Add(match.Groups[1].Value.Replace(@"\\", @"\"));
+                    using (RegistryKey registry = RegistryKey.OpenBaseKey(hive, view))
+                    {
+                        using (RegistryKey key = registry.OpenSubKey(@"Software\Valve\Steam"))
+                        {
+                            if (key != null)
+                            {
+                                roots.Add(key.GetValue("SteamPath") as string);
+                                roots.Add(key.GetValue("InstallPath") as string);
+                                string executable = key.GetValue("SteamExe") as string;
+                                if (!String.IsNullOrWhiteSpace(executable)) roots.Add(Path.GetDirectoryName(executable));
+                            }
+                        }
+                        using (RegistryKey key = registry.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 1657630"))
+                            if (key != null) installed.Add(key.GetValue("InstallLocation") as string);
+                    }
                 }
+                catch (System.Security.SecurityException) { }
+                catch (UnauthorizedAccessException) { }
             }
-            return libraries.Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(path => Path.Combine(path, @"steamapps\common\Slime Rancher 2"))
-                .Where(path => File.Exists(Path.Combine(path, "SlimeRancher2.exe"))).ToArray();
+            roots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam"));
+            roots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Steam"));
+            return GameDiscovery.Find(roots, installed);
         }
 
         internal static void VerifyGame(string directory)

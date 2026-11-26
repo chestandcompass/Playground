@@ -52,3 +52,6 @@ W menu Playground wybierz **Skopiuj swiat singleplayer / Copy a singleplayer wor
 ## Jezyki menu Playground
 Menu, pomoc, pauza, potwierdzenia i komunikaty aktualizacji uzywaja jezyka wybranego w grze: en, de, fr, es, pt, ru, ja, ko, zh (uproszczony). Zachowano rowniez polskie tlumaczenia na wypadek dostepnego locale pl; Playground nie dodaje polskiego jezyka do samej gry. Nieznany jezyk korzysta z angielskiego. Nazwy swiatow nie sa tlumaczone. 34 teksty sprawdzono automatycznie dla wszystkich 10 katalogow; wyglad, dlugosc tekstow i zmiana jezyka na zywo wymagaja jeszcze kontroli w grze. Instalator pozostaje po polsku.
 
+
+Instalator preview 7 rozszerza wykrywanie Steam o rejestr uzytkownika i systemu (32/64 bit), InstallLocation gry, standardowe foldery Steam, stare i nowe libraryfolders.vdf oraz rzeczywisty folder z appmanifest_1657630.acf. Niepelne instalacje sa pomijane. Przy braku jednoznacznego wyniku mozna wskazac SlimeRancher2.exe recznie.
+

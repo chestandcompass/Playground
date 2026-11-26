@@ -56,7 +56,7 @@ try {
     & $compiler /nologo /target:winexe /platform:x64 /optimize+ /utf8output `
         /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Runtime.Serialization.dll `
         /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll `
-        "/resource:$payloadZip,Payload" /out:dist\PlaygroundSetup.exe installer\Program.cs installer\Maintenance.cs $generated
+        "/resource:$payloadZip,Payload" /out:dist\PlaygroundSetup.exe installer\Program.cs installer\Maintenance.cs installer\GameDiscovery.cs $generated
     if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
     $feed.setupUrl='https://github.com/robertbrania-code/Playground/releases/download/'+$release.tag+'/PlaygroundSetup.exe'
     $feed.setupSha256=(Get-FileHash dist\PlaygroundSetup.exe -Algorithm SHA256).Hash.ToLowerInvariant()
