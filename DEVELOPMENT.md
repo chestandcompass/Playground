@@ -47,3 +47,13 @@ A brief two-computer session confirmed remote character and marker visibility. T
 
 Preview 19 reads the update feed through immutable GitHub repository ID 1472210540. Release downloads allow only the original and studio account names, with exact HTTPS repository and asset paths. SHA256 validation is retained. Generated manifests deliberately retain the original owner URL so earlier installers can accept the transition release through GitHub redirects. Preview 19 passed 110 automated assertions.
 
+
+## World management
+
+Save Files reuses the native six-slot list, summary panel and delete confirmation. Tabs switch the storage role without loading another role's options profile. Leaving the screen restores singleplayer storage. Selecting a world opens Playground actions only after the native landing menu finishes rebuilding.
+
+Display names are sidecar metadata. Copies use the native GameV11 serializer, preserve existing reference-table ordering, normalize absent legacy tables to empty tables, and validate a complete native roundtrip before publication. Each copy receives a fresh native world identity and destination slot index. Guest inventories remain tied to their original host world.
+
+WorldSlotFiles stages a complete destination directory and retains the previous directory as a sibling backup. A journal recovers interrupted directory swaps. Fingerprints reject stale confirmations, including changed profile settings; linked paths are refused. Source files are never rewritten.
+
+The developer-only `--playground-menu-test --compass-profile worldmanager-smoke` configuration seeds a separate singleplayer test directory under Playground/tests before storage access. `slots-smoke` checks native copies in both directions, overwriting, fresh identities and sidecar renaming. It refuses to run against the original singleplayer directory. This does not replace a full gameplay test of every imported world.

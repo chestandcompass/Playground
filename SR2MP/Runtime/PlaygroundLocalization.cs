@@ -102,5 +102,18 @@ Join: |Dołącz: |Beitreten: |Rejoindre : |Unirse: |Entrar: |Войти: |参加
 Joining...|Dołączanie...|Verbindung wird hergestellt...|Connexion en cours...|Uniéndose...|Entrando...|Подключение...|参加中...|참가 중...|正在加入……
 Your name|Twoje imię|Dein Name|Ton nom|Tu nombre|Seu nome|Твоё имя|あなたの名前|내 이름|你的名字
 Enter your name|Wpisz swoje imię|Gib deinen Namen ein|Entre ton nom|Escribe tu nombre|Digite seu nome|Введи своё имя|名前を入力|이름을 입력하세요|请输入名字
+Manage worlds|Zarządzaj światami|Welten verwalten|Gérer les mondes|Gestionar mundos|Gerenciar mundos|Управление мирами|ワールド管理|월드 관리|管理世界
+Multiplayer|Wielu graczy|Mehrspieler|Multijoueur|Multijugador|Multijogador|Сетевая игра|マルチプレイ|멀티플레이|多人游戏
+Empty|Pusty|Leer|Vide|Vacío|Vazio|Пусто|空き|비어 있음|空
+Choose a world to copy|Wybierz świat do skopiowania|Welt zum Kopieren wählen|Choisis un monde à copier|Elige un mundo para copiar|Escolha um mundo para copiar|Выберите мир для копирования|コピー元を選択|복사할 월드 선택|选择要复制的世界
+Choose the destination on the other side|Wybierz slot docelowy po drugiej stronie|Ziel auf der anderen Seite wählen|Choisis la destination en face|Elige el destino del otro lado|Escolha o destino do outro lado|Выберите место на другой стороне|反対側の保存先を選択|반대쪽 대상 슬롯 선택|选择另一侧的目标槽位
+Rename selected world|Zmień nazwę wybranego świata|Gewählte Welt umbenennen|Renommer le monde choisi|Renombrar mundo seleccionado|Renomear mundo selecionado|Переименовать выбранный мир|選択したワールドの名前変更|선택한 월드 이름 변경|重命名所选世界
+Confirm copy|Potwierdź kopiowanie|Kopieren bestätigen|Confirmer la copie|Confirmar copia|Confirmar cópia|Подтвердить копирование|コピーを確認|복사 확인|确认复制
+Confirm overwrite|Potwierdź nadpisanie|Überschreiben bestätigen|Confirmer le remplacement|Confirmar sobrescritura|Confirmar substituição|Подтвердить замену|上書きを確認|덮어쓰기 확인|确认覆盖
+World copied|Świat skopiowany|Welt kopiert|Monde copié|Mundo copiado|Mundo copiado|Мир скопирован|コピーしました|월드 복사 완료|世界已复制
+Copy from: |Kopiuj z: |Kopieren von: |Copier depuis : |Copiar desde: |Copiar de: |Копировать из: |コピー元：|복사 원본: |复制来源：
+Copy to: |Kopiuj do: |Kopieren nach: |Copier vers : |Copiar a: |Copiar para: |Копировать в: |コピー先：|복사 대상: |复制目标：
+Copy to Singleplayer|Kopiuj do gry solo|In Einzelspieler kopieren|Copier vers Solo|Copiar a un jugador|Copiar para um jogador|Копировать в одиночную игру|シングルプレイにコピー|싱글플레이로 복사|复制到单人游戏
+Copy to Multiplayer|Kopiuj do multiplayer|In Mehrspieler kopieren|Copier vers Multijoueur|Copiar a multijugador|Copiar para multijogador|Копировать в сетевую игру|マルチプレイにコピー|멀티플레이로 복사|复制到多人游戏
 Continue|Dalej|Weiter|Continuer|Continuar|Continuar|Продолжить|次へ|계속|继续";
 }

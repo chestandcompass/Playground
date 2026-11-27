@@ -40,9 +40,9 @@ The on-screen status shows whether you are connecting, connected, playing single
 
 Multiplayer worlds are separate from your singleplayer saves. A guest's personal inventory is remembered for each host world. Renaming a multiplayer world does not reset that association.
 
-To bring an existing adventure into multiplayer, choose **Copy a singleplayer world** and confirm the import. The original stays unchanged, and the multiplayer copy can be renamed afterward.
+Open **Save Files** and choose the **Singleplayer** or **Multiplayer** tab. Each tab has six separate slots. Select a world to play, rename it, or copy it to a slot in the other tab. Copying and overwriting require confirmation; the source stays unchanged and a backup of the destination is kept.
 
-In **My worlds**, select a world to play, rename, or delete it. Deleting a multiplayer world requires confirmation and does not delete its singleplayer original.
+World names are stored separately from game saves. Renaming a world keeps its identity and guest progress. A copied world gets a new identity. Use the game's delete button in Save Files to remove the selected world after confirmation. **My worlds** opens the Multiplayer tab.
 
 ## Updates and uninstalling
 

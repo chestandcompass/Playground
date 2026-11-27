@@ -47,18 +47,35 @@ internal static class CoopSaveManager
         if (string.IsNullOrEmpty(__instance.savePath))
             throw new InvalidOperationException("Storage has not been initialized; refusing file IO.");
         var original = Path.GetFullPath(__instance.savePath);
-        if (original.StartsWith(Path.GetFullPath(Root) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) return;
+        WorldSlotFiles.Recover(original);
+        if (Profile == "worldmanager-smoke" && Environment.GetCommandLineArgs().Contains("--playground-menu-test")
+            && originalDirectory == null && !original.StartsWith(Path.GetFullPath(Root) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        {
+            var isolated = Path.Combine(Root,"tests",Profile,"singleplayer","Saves");
+            if(!Directory.Exists(isolated))
+            {
+                Directory.CreateDirectory(isolated);
+                foreach(var file in Directory.EnumerateFiles(original))
+                    File.Copy(file,Path.Combine(isolated,Path.GetFileName(file)),false);
+            }
+            originalDirectory = isolated;
+            __instance.savePath = isolated;
+            return;
+        }
+        if (original.StartsWith(Path.GetFullPath(Root) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(original,originalDirectory,StringComparison.OrdinalIgnoreCase)) return;
         originalDirectory ??= original;
         if (!Enabled) return;
         // Hash the original path so different store accounts do not share local guest profiles.
         localAccount = CoopFiles.Key(original);
         var redirected = Path.Combine(Root, Role, Profile, localAccount, "Saves");
+        WorldSlotFiles.Recover(redirected);
         Directory.CreateDirectory(redirected);
         __instance.savePath = redirected;
         SrLogger.LogMessage($"Playground storage: {redirected}");
     }
 
-    internal static void SelectRole(string role)
+    internal static void SelectRole(string role, bool loadProfile = true)
     {
         if (GameHelpers.inGame || Main.Server.IsRunning || Main.Client.IsConnected)
             throw new InvalidOperationException("Return to the main menu before selecting a multiplayer world.");
@@ -76,7 +93,7 @@ internal static class CoopSaveManager
         restorePending = false;
         Storage.savePath = originalDirectory;
         EnsureStorage(Storage);
-        GameContext.Instance.AutoSaveDirector.LoadProfile();
+        if(loadProfile) GameContext.Instance.AutoSaveDirector.LoadProfile();
     }
 
     internal static void EndSession()
@@ -196,7 +213,7 @@ internal static class CoopSaveManager
         RestorePlayer();
     }
 
-    private static FileStorageProvider Storage
+    internal static FileStorageProvider Storage
         => GameContext.Instance.AutoSaveDirector._storageProvider.Cast<FileStorageProvider>();
 
     // Player snapshots use the game's own serializer, preserving slime appearance/emotion metadata.

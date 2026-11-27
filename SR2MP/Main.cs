@@ -221,6 +221,7 @@ public sealed class Main : MelonMod
         LanDiscovery.Update();
         NativeMenu.UpdateLanBrowser();
         PlayerNameEntry.Update();
+        WorldSlotMenu.Update();
         HostWorldRules.Update();
         StorageSynchronization.Update();
         PlayerCosmetics.Update();

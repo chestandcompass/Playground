@@ -213,6 +213,7 @@ try
     }
     Check(lockedImportBlocked && !File.Exists(Path.Combine(root, "locked-import", "world_12.sav")), "busy source leaves no partially published multiplayer save");
     Check(!Directory.EnumerateFiles(root, "*.tmp", SearchOption.AllDirectories).Any(), "failed imports clean up temporary copies");
+    WorldSlotChecks.Run(Check);
     Console.WriteLine($"{passed} storage assertions passed.");
 }
 finally { Directory.Delete(root, true); }

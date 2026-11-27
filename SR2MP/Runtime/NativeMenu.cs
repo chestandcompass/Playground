@@ -81,6 +81,7 @@ internal static class NativeMenu
     private static bool pendingHost;
     private static bool navigationPending;
     private static int pageRevision;
+    internal static int LandingGeneration { get; private set; }
     private static bool lanVisible, lanRefreshPending;
     private static int lanOffset;
     private static string lanSignature = "";
@@ -120,6 +121,7 @@ internal static class NativeMenu
 
     internal static void AddEntry(MainMenuLandingRootUI menu)
     {
+        LandingGeneration++;
         root = menu;
         originals.Clear();
         keepAlive.Clear();
@@ -174,11 +176,72 @@ internal static class NativeMenu
         Page(
             ("Create a world", CreateHost),
             ("My worlds", ShowWorlds),
-            ("Copy a singleplayer world", ShowImportWorlds),
             ("Join a friend", ShowJoin),
             (UpdateManager.Caption, () => { UpdateManager.Activate(); ShowHome(); }),
             ("Back", Back));
         homeVisible = true;
+    }
+
+    private static void ShowWorldManager()
+    {
+        WorldSlotMenu.Open();
+    }
+
+    internal static void OpenSaveFiles()
+        => originals.First(m => m.Definition.name == "SaveFilesDisplay").InvokeBehavior();
+
+    internal static void ClearWorldIntent() { pendingHost=false; pendingJoin=null; }
+
+    internal static void CreateManagedWorld(string role, ButtonBehaviorModel native)
+    {
+        CoopSaveManager.SelectRole(role);
+        if(role == "host") AskPlayerName(() => { pendingHost = true; native.InvokeBehavior(); },()=>WorldSlotMenu.Open(role));
+        else native.InvokeBehavior();
+    }
+
+    internal static void ManageSelectedWorld(WorldSlot slot, Il2CppMonomiPark.SlimeRancher.UI.MainMenu.Model.LoadGameBehaviorModel native)
+    {
+        Page(("Play: " + slot.Label, () =>
+        {
+            CoopSaveManager.SelectRole(slot.Role);
+            if(slot.Role == "host") AskPlayerName(() =>
+            {
+                pendingHost = true;
+                GameContext.Instance.AutoSaveDirector.BeginLoad(slot.Save!.SaveIdentifier,null);
+            },()=>WorldSlotMenu.Open(slot.Role));
+            else native.InvokeBehavior();
+        }),
+        ("Rename selected world",()=>RenameManagedWorld(slot)),
+        (slot.Role == "host" ? "Copy to Singleplayer" : "Copy to Multiplayer",
+            ()=>WorldSlotMenu.Open(slot.Role == "host" ? "singleplayer" : "host",slot)),
+        ("Back",()=>WorldSlotMenu.Open(slot.Role)));
+    }
+
+    internal static void ConfirmWorldCopy(WorldSlot source,WorldSlot target)
+    {
+        string L(string text)=>PlaygroundLocalization.Translate(LocalizationSettings.SelectedLocale?.Identifier.Code,text);
+        var from=L(source.Role=="host"?"Multiplayer":"Singleplayer")+" "+(source.Index+1)+": "+source.Label;
+        var to=L(target.Role=="host"?"Multiplayer":"Singleplayer")+" "+(target.Index+1)+": "+(target.Save==null?L("Empty"):target.Label);
+        Page(("Cancel",()=>WorldSlotMenu.Open(target.Role,source)),
+            ("Copy from: "+from,()=>{}), ("Copy to: "+to,()=>{}),
+            (target.Save==null?"Confirm copy":"Confirm overwrite",()=>
+            {
+                WorldSlots.Copy(source,target);
+                Page(("World copied",()=>WorldSlotMenu.Open(target.Role)),("Continue",()=>WorldSlotMenu.Open(target.Role)));
+            }));
+    }
+
+    internal static void RenameManagedWorld(WorldSlot slot)
+    {
+        void Confirm()
+        {
+            if(!PlayerNameEntry.Read(out var label)) return;
+            WorldSlots.Rename(slot,label);
+            PlayerNameEntry.Close();
+            WorldSlotMenu.Open(slot.Role);
+        }
+        Page(("World name",PlayerNameEntry.Focus),("Continue",Confirm),("Back",PlayerNameEntry.Cancel));
+        PlayerNameEntry.OpenWorld(slot.Label,Confirm,()=>WorldSlotMenu.Open(slot.Role));
     }
 
     internal static void RefreshUpdateStatus()
@@ -207,6 +270,22 @@ internal static class NativeMenu
             try { action(); }
             catch (Exception ex) { SrLogger.LogError($"Playground menu: {ex}"); ShowError(); }
             finally { if (userAction) navigationPending = false; }
+        }
+    }
+
+    internal static void AfterSaveFiles(int generation,Action action)
+    {
+        MelonLoader.MelonCoroutines.Start(WaitForLanding());
+        IEnumerator WaitForLanding()
+        {
+            var deadline=Time.realtimeSinceStartup+5f;
+            while(LandingGeneration<=generation || root==null || !root.gameObject.activeInHierarchy)
+            {
+                if(Time.realtimeSinceStartup>deadline) { SrLogger.LogError("Save Files did not return to the landing menu."); yield break; }
+                yield return null;
+            }
+            yield return null;
+            Navigate(action,false);
         }
     }
 
@@ -249,20 +328,7 @@ internal static class NativeMenu
 
     private static void ShowWorlds()
     {
-        CoopSaveManager.SelectRole("host");
-        var options = new List<(string, Action)>();
-        foreach (var group in GameContext.Instance.AutoSaveDirector.AvailableGamesByGameName())
-        {
-            if (group.Value.Count == 0) continue;
-            var save = group.Value[0];
-            for (var i = 1; i < group.Value.Count; i++)
-                if (group.Value[i].SaveNumber > save.SaveNumber) save = group.Value[i];
-            if (save.IsInvalid) continue;
-            options.Add((WorldName(save), () => ShowWorldActions(save)));
-        }
-        if (options.Count == 0) options.Add(("Create your first world", CreateHost));
-        options.Add(("Back", ShowHome));
-        Page(options.ToArray());
+        WorldSlotMenu.Open("host");
     }
 
     private static void ShowWorldActions(Il2CppMonomiPark.SlimeRancher.Persist.Summary save) => Page(
@@ -453,6 +519,8 @@ internal static class NativeMenu
 
     internal static IEnumerator EnterWorld()
     {
+        if(pendingHost && CoopSaveManager.Role != "host") pendingHost=false;
+        if(pendingJoin != null && CoopSaveManager.Role != "guest") pendingJoin=null;
         if (enteringWorld || (!pendingHost && pendingJoin == null)) yield break;
         enteringWorld = true;
         var hiddenIntroCanvases = new List<(Canvas canvas, bool enabled)>();
@@ -564,6 +632,15 @@ internal static class NativeMenu
                 if (smokeOriginalName != null) Main.SetPlayerName(smokeOriginalName, smokeOriginalConfirmed);
                 break;
             case "import": ShowImportWorlds(); break;
+            case "manage": ShowWorldManager(); break;
+            case "tab-host": WorldSlotMenu.Switch("host"); break;
+            case "tab-single": WorldSlotMenu.Switch("singleplayer"); break;
+            case "tab-host-click": WorldSlotMenu.TestTab("host"); break;
+            case "slot-first": WorldSlotMenu.TestSelect(0); break;
+            case "slot-last": WorldSlotMenu.TestSelect(5); break;
+            case "world-copy": root!._models[2].InvokeBehavior(); break;
+            case "world-rename": root!._models[1].InvokeBehavior(); break;
+            case "slots-smoke": WorldSlots.SmokeTest(); break;
             case "join-paste": JoinCopiedCode(); break;
             case "join-help": ShowJoinHelp(); break;
             case "layout-small": Screen.SetResolution(1280, 720, false); break;
