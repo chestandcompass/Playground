@@ -1,10 +1,10 @@
 # Playground
 
-An **unofficial, experimental multiplayer mod for Slime Rancher 2**, made for playing together on a local network.
+An **unofficial, experimental multiplayer mod for Slime Rancher 2**, made for playing together on a local network, with an experimental online option.
 
 Explore with a friend using the game's familiar menus, separate multiplayer worlds, and your own player name and appearance.
 
-**Requires Slime Rancher 2 1.3.0 on Windows x64. LAN only — both computers must be on the same local network.**
+**Requires Slime Rancher 2 1.3.0 on Windows x64. Install the same mod version on both computers.**
 
 ## Download and install
 
@@ -20,7 +20,17 @@ Install **the same Playground version on both computers**.
 2. The other player chooses **Join a friend → Find games on LAN**.
 3. Select the host's world, enter your name, choose your hair color, and continue.
 
-You can also join using an invitation code copied by the host from the pause menu. Copy the received code and choose **Paste code and join**.
+You can also join a LAN game using an invitation code copied by the host from the pause menu. Copy the received code and choose **Paste code and join**.
+
+### Play over the internet (experimental, two players)
+
+1. The host opens a multiplayer world, pauses, and chooses **Open online lobby**.
+2. Once the lobby opens, choose **Copy online code** and share it with your friend.
+3. The guest copies the code and chooses **Join a friend → Paste code and join**.
+
+Both players need internet access. The mod includes the online connection; no VPN or router port forwarding is required. Online codes use our shared free relay, which has limited daily capacity. LAN games do not use that capacity.
+
+Each online lobby lasts up to four hours. If either connection ends, ask the host to open a new lobby and share its new code. Your saved progress stays associated with the same world. Online play is still experimental and has not yet been verified in a full gameplay session between two separate networks.
 
 If a world does not appear, check that both players have the same mod version, the host has opened the world, and both computers are on the same network. Allow the game through the firewall on your private network.
 

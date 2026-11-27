@@ -14,9 +14,9 @@ internal static class BuildInfo
     // Version automatically gets a -dev at the end if SR2MP is compiled by GitHub Action
     internal const string MelonVersion = "0.1.0";
     internal const string Version = "0.1.0"; // Auto-Dev_Do_not_remove
-    internal const int UpdateBuild = 21;
+    internal const int UpdateBuild = 22;
     internal const string Discord = "https://discord.com/invite/a7wfBw5feU";
-    internal const string SourceCode = "https://github.com/robertbrania-code/Playground";
+    internal const string SourceCode = "https://github.com/chestandcompass/Playground";
     internal const string Nexus = "https://www.nexusmods.com/slimerancher2/mods/118";
     internal const bool UsePrism = false;
     internal const string MinimumStarlightVersion = ""; // e.g "3.6.3", the min required SR2 version. No beta or alpha versions

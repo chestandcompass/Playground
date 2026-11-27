@@ -1,6 +1,13 @@
 # Changelog
 
-All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows x64. Full host-and-guest validation on two computers remains pending.
+Experimental previews for Slime Rancher 2 1.3.0 on Windows x64. Online play remains under testing.
+
+## Preview 22 — experimental online lobbies
+
+- Open a two-player online lobby from the pause menu and share its code without a VPN or port forwarding.
+- Keep LAN discovery and separate multiplayer saves.
+- Open a fresh lobby after a disconnection without leaving the host world.
+- Keep online sessions separate when reconnecting.
 
 ## Preview 21
 

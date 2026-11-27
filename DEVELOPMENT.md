@@ -57,3 +57,13 @@ Display names are sidecar metadata. Copies use the native GameV11 serializer, pr
 WorldSlotFiles stages a complete destination directory and retains the previous directory as a sibling backup. A journal recovers interrupted directory swaps. Fingerprints reject stale confirmations, including changed profile settings; linked paths are refused. Source files are never rewritten.
 
 The developer-only `--playground-menu-test --compass-profile worldmanager-smoke` configuration seeds a separate singleplayer test directory under Playground/tests before storage access. `slots-smoke` checks native copies in both directions, overwriting, fresh identities and sidecar renaming. It refuses to run against the original singleplayer directory. This does not replace a full gameplay test of every imported world.
+
+
+## Online preview 22
+
+
+The local test build uses built-in ClientWebSocket and bounded PGD1 datagram batches over the dedicated playground-relay service. No probe key or room signing secret is included in the mod. Room creation and traffic are bounded; capabilities are role-bound and expire after four hours. Only one host and one guest are supported. Ending either connection ends that lobby; a fresh lobby uses a fresh packet session, while guest progress remains bound to the stable world identity.
+
+Build the current installer using `Build-Installer.ps1`. Online is an experimental preview, not a completed two-network gameplay validation. Do not ship a changed DLL under build 21. Keep generated download URLs compatible with old installers.
+
+Evidence on 2026-11-27: 118 storage assertions; 6 relay policy tests; live .NET relay tests preserve 128 varied datagrams in both directions, reject protocol mismatch and ended codes, and close the opposite connection when either peer leaves. Native isolated single-instance test opened a real lobby, showed Copy online code without clipping at 2560x1440, and closed the host on native Save & Quit. A second native run used the real pause button, connected and disconnected a synthetic guest through the live service, and reopened a different lobby code without leaving the world or increasing NetworkTime component count. Final log-level and offline-broadcast guards were compiled after that run. The first new-world smoke logged a native missing-save lookup before its first save; the second existing-world run reached hosting without that lookup error. The synthetic traffic is not a two-computer gameplay test. Full world synchronization and latency across separate networks remain to be tested.

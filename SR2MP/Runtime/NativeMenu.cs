@@ -1,4 +1,5 @@
 using System.Collections;
+using SR2MP.Shared.Transport;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -59,6 +60,13 @@ public sealed class PlaygroundPauseItem : PauseItemModel
         label = NativeMenu.Text(template, text);
         shouldPlayCueOnSubmit = true;
         action = onClick;
+    }
+    [HideFromIl2Cpp]
+    internal void SetCaption(string text)
+    {
+        var updated = NativeMenu.Text(label, text);
+        label.TableEntryReference = updated.TableEntryReference;
+        label.RefreshString();
     }
     public override bool DisplayItem() => true;
     public override void InvokeBehavior()
@@ -455,15 +463,15 @@ internal static class NativeMenu
     }
 
     private static void ShowJoinHelp() => Page(
-        ("Host: pause → Copy invitation code", ShowJoinHelp),
+        ("Online: host pauses and opens an online lobby", ShowJoinHelp),
         ("Copy the received code (Ctrl+C)", ShowJoinHelp),
-        ("Paste code and join (same Wi-Fi/LAN)", JoinCopiedCode),
+        ("Paste code and join", JoinCopiedCode),
         ("Back", ShowJoin));
 
     private static void JoinCopiedCode()
     {
         var code = GUIUtility.systemCopyBuffer.Trim();
-        if (!JoinCode.TryDecode(code, out _, out _, out _))
+        if (!OnlineLobbyClient.TryToken(code, out _) && !JoinCode.TryDecode(code, out _, out _, out _))
         {
             Page(("No valid code — copy it first (Ctrl+C)", ShowJoinHelp),
                 ("Paste again and join", JoinCopiedCode),
@@ -569,7 +577,28 @@ internal static class NativeMenu
             GameContext.Instance.AutoSaveDirector.SaveGameAndFlush();
             var code = pendingJoin;
             pendingJoin = null;
-            if (JoinCode.TryDecode(code, out var ip, out var port, out _)) Main.Client.Connect(ip.ToString(), port);
+            if (OnlineLobbyClient.TryToken(code, out _))
+            {
+                var generation = OnlineSession.Generation;
+                var connection = OnlineLobbyClient.JoinAsync(code, OnlineSession.Protocol);
+                while (!connection.IsCompleted) yield return null;
+                if (generation != OnlineSession.Generation || !GameHelpers.inGame || CoopSaveManager.Role != "guest")
+                {
+                    if (connection.IsCompletedSuccessfully) connection.Result.Dispose();
+                    else _ = connection.Exception;
+                    yield break;
+                }
+                if (connection.IsFaulted || connection.IsCanceled)
+                {
+                    _ = connection.Exception;
+                    SessionGuard.BeginConnect();
+                    SessionGuard.Failure("Online connection failed. Check the code and host, then try again.");
+                }
+                else if (GameHelpers.inGame && CoopSaveManager.Role == "guest")
+                    Main.Client.Connect(RelayDatagramTransport.Peer.Address.ToString(), RelayDatagramTransport.Peer.Port, connection.Result);
+                else connection.Result.Dispose();
+            }
+            else if (JoinCode.TryDecode(code, out var ip, out var port, out _)) Main.Client.Connect(ip.ToString(), port);
         }
         }
         finally
@@ -686,6 +715,21 @@ internal static class NativeMenu
             case "guest-profile-smoke": GuestPlayerProfile.SmokeTest(); break;
             case "remote-player-smoke": MelonLoader.MelonCoroutines.Start(SR2MP.Handlers.Internal.ConnectionApproveHandler.SpawnSmoke()); break;
             case "disconnect-smoke": SessionGuard.TestLostConnection(); break;
+            case "online":
+                var pauseRoot = Resources.FindObjectsOfTypeAll<PauseMenuRoot>().First(p => p.gameObject.activeInHierarchy);
+                pauseRoot._pausedItems[pauseRoot._pausedItems.Count - 1].InvokeBehavior();
+                break;
+            case "online-status": SrLogger.LogMessage($"ONLINE SMOKE: active={OnlineSession.IsOnline}; host={Main.Server.IsRunning}; peers={Main.Server.GetClientCount}"); break;
+            case "online-cycle-smoke":
+                var cyclePause = Resources.FindObjectsOfTypeAll<PauseMenuRoot>().First(p => p.gameObject.activeInHierarchy);
+                MelonLoader.MelonCoroutines.Start(OnlineSession.TestCycle(cyclePause._pausedItems[cyclePause._pausedItems.Count - 1].Cast<PlaygroundPauseItem>()));
+                break;
+            case "host-existing-smoke":
+                CoopSaveManager.SelectRole("host");
+                var hostTestSlot = WorldSlots.Read("host").First(s => s.Save != null);
+                pendingHost = true;
+                GameContext.Instance.AutoSaveDirector.BeginLoad(hostTestSlot.Save!.SaveIdentifier, null);
+                break;
             case "play-selected": root!._models[0].InvokeBehavior(); break;
             case "back": Back(); break;
             case "home": ShowHome(); break;
@@ -703,6 +747,7 @@ internal static class NativeMenu
         {
             if (Main.Server.IsRunning)
             {
+                if (OnlineSession.CopyCode()) return;
                 var address = NetworkInterface.GetAllNetworkInterfaces()
                     .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                     .SelectMany(n => n.GetIPProperties().UnicastAddresses)
@@ -716,7 +761,14 @@ internal static class NativeMenu
                 Main.Client.Disconnect();
             }
         });
-        pause._pausedItems.Add(item);
+        if (CoopSaveManager.Role == "guest" || (Main.Server.IsRunning && !OnlineSession.IsOnline)) pause._pausedItems.Add(item);
+        if (CoopSaveManager.Role == "host")
+        {
+            PlaygroundPauseItem online = null!;
+            online = new PlaygroundPauseItem(pause._pausedItems[0].Label,
+                OnlineSession.IsOnline ? "Copy online code" : "Open online lobby", () => OnlineSession.Open(online));
+            pause._pausedItems.Add(online);
+        }
         // The current pause button binds IMenuLabelItem, while the main-menu
         // button binds ButtonBehaviorModel. Using the legacy model as the binder
         // type creates unbound "label" placeholders for the whole pause menu.

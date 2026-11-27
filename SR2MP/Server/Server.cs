@@ -10,6 +10,7 @@ using SR2MP.Server.Managers;
 using SR2MP.Server.Models;
 using SR2MP.Shared.Managers;
 using SR2MP.Shared.Utils;
+using SR2MP.Shared.Transport;
 
 namespace SR2MP.Server;
 
@@ -26,6 +27,7 @@ public sealed class SR2MPServer
 
     private Timer? timeoutTimer;
     private bool subscribedToQuitting;
+    private bool sessionStarted;
 
     // Just here so that the port is viewable.
 
@@ -53,6 +55,7 @@ public sealed class SR2MPServer
     /// Gets a value indicating the running status of the server.
     /// </summary>
     public bool IsRunning => NetworkManager.IsRunning;
+    internal long SessionEpoch => NetworkManager.SessionEpoch;
 
     internal SR2MPServer()
     {
@@ -62,10 +65,20 @@ public sealed class SR2MPServer
         packetManager = new ServerPacketManager(NetworkManager, ClientManager);
 
         NetworkManager.OnDataReceived += OnDataReceived;
+        NetworkManager.OnTransportFailed += session => MainThreadDispatcher.Instance?.Enqueue(()=>
+        {
+            if (!NetworkManager.OwnsTransport(session)) return;
+            if (session is RelayDatagramTransport)
+            {
+                timeoutTimer?.Dispose(); timeoutTimer = null;
+                ClientManager.Clear();
+            }
+            else Close();
+        });
         ClientManager.OnClientRemoved += OnClientRemoved;
     }
 
-    internal void Start(int port, bool enableIPv6)
+    internal void Start(int port, bool enableIPv6, IDatagramTransport? prepared = null)
     {
         if (!CoopSaveManager.CanNetwork("host")) return;
         if (Main.Client.IsConnected)
@@ -92,9 +105,10 @@ public sealed class SR2MPServer
                 Application.quitting += new Action(Close);
             }
 
-            NetworkManager.Start(port, enableIPv6);
+            NetworkManager.Start(port, enableIPv6, prepared);
+            sessionStarted = true;
             Port = port;
-            LanDiscovery.StartHosting();
+            if (prepared == null) LanDiscovery.StartHosting();
             timeoutTimer = new Timer(CheckClientTimeouts, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
             InvokeServerStarted();
             MultiplayerUI.Instance.RegisterSystemMessage(
@@ -130,6 +144,25 @@ public sealed class SR2MPServer
         }
     }
 
+    // Transport changes must not rerun world initialization: those subscribers
+    // install simulation components and repeating them would duplicate updates.
+    internal bool ReplaceTransport(IDatagramTransport prepared)
+    {
+        if (!sessionStarted || CoopSaveManager.Role != "host" || ClientManager.ClientCount != 0)
+        { prepared.Dispose(); return false; }
+        LanDiscovery.StopHosting();
+        timeoutTimer?.Dispose(); timeoutTimer = null;
+        NetworkManager.Stop();
+        PacketDeduplication.Clear();
+        try
+        {
+            NetworkManager.Start(Port, false, prepared);
+            timeoutTimer = new Timer(CheckClientTimeouts, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+            return true;
+        }
+        catch { prepared.Dispose(); return false; }
+    }
+
     private void CheckClientTimeouts(object? state)
     {
         if (!NetworkManager.IsRunning)
@@ -138,7 +171,7 @@ public sealed class SR2MPServer
         ClientManager.RemoveTimedOutClients();
     }
 
-    private void OnDataReceived(byte[] data, int receivedBytes, IPEndPoint clientEp)
+    private void OnDataReceived(byte[] data, int receivedBytes, IPEndPoint clientEp,long generation)
     {
         SrLogger.LogPacketSize($"Received {receivedBytes} bytes from Client!",
             $"Received {receivedBytes} bytes from {clientEp}.");
@@ -147,7 +180,7 @@ public sealed class SR2MPServer
 
         try
         {
-            packetManager.HandlePacket(data, receivedBytes, clientEp);
+            packetManager.HandlePacket(data, receivedBytes, clientEp,generation);
         }
         catch (Exception ex)
         {
@@ -211,8 +244,9 @@ public sealed class SR2MPServer
     internal void Close()
     {
         LanDiscovery.StopHosting();
-        if (!NetworkManager.IsRunning)
+        if (!sessionStarted)
             return;
+        sessionStarted = false;
 
         var closeChatMessage = new ChatMessagePacket
         {
@@ -347,6 +381,7 @@ public sealed class SR2MPServer
     private void PrepareAndSendToAll<T>(T state, PacketReliability reliability, NetworkChannel channel,
         PacketWriterDelegate<T> writeAction)
     {
+        if (!IsRunning) return;
         using var writer = PacketWriter.Borrow();
 
         try

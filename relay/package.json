@@ -1,0 +1,14 @@
+{
+  "name": "playground-relay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev --config wrangler.online.jsonc",
+    "deploy": "wrangler deploy --config wrangler.online.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "4.169.0",
+    "ws": "8.23.0"
+  }
+}

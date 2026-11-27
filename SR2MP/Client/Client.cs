@@ -12,6 +12,7 @@ using SR2MP.Packets.Player;
 using SR2MP.Packets.Utils;
 using SR2MP.Shared.Managers;
 using SR2MP.Shared.Utils;
+using SR2MP.Shared.Transport;
 
 namespace SR2MP.Client;
 
@@ -20,10 +21,12 @@ namespace SR2MP.Client;
 /// </summary>
 public sealed class SR2MPClient
 {
-    private UdpClient? udpClient;
+    private IDatagramTransport? transport;
     private IPEndPoint? serverEndPoint;
-    private Thread? receiveThread;
+    private System.Threading.Thread? receiveThread;
     private ReliabilityManager? reliabilityManager;
+    private long epoch;
+    internal long SessionEpoch => Interlocked.Read(ref epoch);
 
     private volatile bool isConnected;
     private volatile bool isConnecting;
@@ -96,7 +99,7 @@ public sealed class SR2MPClient
         PlayerManager.OnPlayerUpdated += (playerId, player) => OnPlayerUpdate?.Invoke(playerId, player);
     }
 
-    internal void Connect(string serverIp, int port)
+    internal void Connect(string serverIp, int port, IDatagramTransport? prepared = null)
     {
         if (!CoopSaveManager.CanNetwork("guest")) return;
         if (Main.Server.IsRunning)
@@ -133,7 +136,8 @@ public sealed class SR2MPClient
         {
             var parsedIp = IPAddress.Parse(serverIp);
 
-            if (parsedIp.AddressFamily == AddressFamily.InterNetworkV6)
+            if (prepared != null) transport = prepared;
+            else if (parsedIp.AddressFamily == AddressFamily.InterNetworkV6)
             {
                 if (!Socket.OSSupportsIPv6)
                 {
@@ -141,26 +145,30 @@ public sealed class SR2MPClient
                     throw new NotSupportedException("IPv6 is not available on this system");
                 }
 
-                udpClient = new UdpClient(AddressFamily.InterNetworkV6);
+                transport = new UdpDatagramTransport(new UdpClient(AddressFamily.InterNetworkV6));
                 SrLogger.LogMessage("Using IPv6 connection");
             }
             else
             {
-                udpClient = new UdpClient(AddressFamily.InterNetwork);
+                transport = new UdpDatagramTransport(new UdpClient(AddressFamily.InterNetwork));
                 SrLogger.LogMessage("Using IPv4 connection");
             }
 
             PacketDeduplication.Clear();
 
             serverEndPoint = new IPEndPoint(parsedIp, port);
-            udpClient.Connect(serverEndPoint);
-
-            udpClient.Client.ReceiveBufferSize = 512 * 1024;
-            udpClient.Client.SendBufferSize = 512 * 1024;
+            // UDP's connected socket rejects unexpected senders. Relays authenticate
+            // their single virtual peer before a transport is passed into this method.
+            if (transport is UdpDatagramTransport udp) udp.Connect(serverEndPoint);
 
             PlayerId = PlayerIdGenerator.GeneratePersistentPlayerId();
 
-            reliabilityManager = new ReliabilityManager(SendRaw);
+            var session = transport!;
+            var generation = Interlocked.Increment(ref epoch);
+            reliabilityManager = new ReliabilityManager((data, endpoint) =>
+            {
+                if (generation == SessionEpoch && data.Array != null) session.Send(data, endpoint);
+            });
             reliabilityManager.Start();
 
             packetManager.RegisterHandlers(Main.Core);
@@ -168,13 +176,13 @@ public sealed class SR2MPClient
             isConnected = true;
             connectionAcknowledged = false;
 
-            receiveThread = new Thread(new Action(ReceiveLoop))
+            receiveThread = new System.Threading.Thread(()=>ReceiveLoop(session,generation))
             {
                 IsBackground = true
             };
             receiveThread.Start();
 
-            connectionTimeoutTimer = new Timer(CheckConnectionTimeout, null,
+            connectionTimeoutTimer = new Timer(CheckConnectionTimeout, generation,
                 TimeSpan.FromSeconds(ConnectionTimeoutSeconds), Timeout.InfiniteTimeSpan);
 
             if (!subscribedToQuitting)
@@ -196,6 +204,7 @@ public sealed class SR2MPClient
         }
         catch (Exception ex)
         {
+            transport?.Dispose(); transport = null;
             SrLogger.LogError($"Error connecting to the Server: {ex}");
             connectionAcknowledged = false;
             isConnected = false;
@@ -206,20 +215,21 @@ public sealed class SR2MPClient
 
     private void CheckConnectionTimeout(object? state)
     {
+        if(state is not long generation || generation!=SessionEpoch) return;
         if (connectionAcknowledged || !isConnected)
             return;
 
         SrLogger.LogError("Connection timeout: Server did not respond within 10 seconds");
 
         isConnecting = false;
-        Disconnect();
+        DisconnectSession(generation);
     }
 
     internal void UpdateConnectionStatus(bool state) => isConnected = state;
 
-    private void ReceiveLoop()
+    private void ReceiveLoop(IDatagramTransport session,long generation)
     {
-        if (udpClient == null)
+        if (session == null)
         {
             SrLogger.LogError("UDP client is null in ReceiveLoop!");
             return;
@@ -227,28 +237,30 @@ public sealed class SR2MPClient
 
         SrLogger.LogMessage("Client ReceiveLoop started!");
 
-        EndPoint remoteEp = NetworkEndpoints.ReceiveEndpoint(udpClient.Client.AddressFamily);
+        EndPoint remoteEp = NetworkEndpoints.ReceiveEndpoint(session.AddressFamily);
 
         var receiveBuffer = ArrayPool<byte>.Shared.Rent(2048);
 
         try
         {
-            while (isConnected)
+            while (isConnected && ReferenceEquals(transport, session))
             {
                 try
                 {
-                    var receivedBytes = udpClient.Client.ReceiveFrom(receiveBuffer, ref remoteEp);
+                    var receivedBytes = session.Receive(receiveBuffer, ref remoteEp);
+                    if (generation != SessionEpoch) break;
 
                     if (receivedBytes == 0)
                         continue;
 
                     Interlocked.Exchange(ref lastHostPacket, Environment.TickCount64);
-                    packetManager.HandlePacket(receiveBuffer, receivedBytes, (IPEndPoint)remoteEp);
+                    packetManager.HandlePacket(receiveBuffer, receivedBytes, (IPEndPoint)remoteEp,generation);
                     SrLogger.LogPacketSize($"Received {receivedBytes} bytes",
                         $"Received {receivedBytes} bytes from {remoteEp}");
                 }
                 catch (SocketException ex)
                 {
+                    if (!ReferenceEquals(transport, session) || !isConnected) break;
                     // This prevents WSAEINTR from logging, this is correct
                     if (ex.ErrorCode is not 10004 and not 10054)
                     {
@@ -264,12 +276,20 @@ public sealed class SR2MPClient
                     }
 
                     MultiplayerUI.Instance.RegisterSystemMessage("Could not join the world, check the MelonLoader console for details", $"SYSTEM_JOIN_10054_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}", MultiplayerUI.SystemMessageClose);
-                    Disconnect();
+                    DisconnectSession(generation);
+                }
+                catch (IOException) when (session is RelayDatagramTransport)
+                {
+                    if (!isConnected || !ReferenceEquals(transport, session)) break;
+                    SrLogger.LogMessage("Playground relay connection ended.");
+                    DisconnectSession(generation);
+                    break;
                 }
                 catch (Exception ex)
                 {
+                    if (!ReferenceEquals(transport, session) || !isConnected) break;
                     SrLogger.LogError($"ReceiveLoop error: {ex}");
-                    Disconnect();
+                    DisconnectSession(generation);
                     break;
                 }
             }
@@ -306,7 +326,7 @@ public sealed class SR2MPClient
     private void PrepareAndSend<T>(T state, PacketReliability reliability, byte packetType,
         NetworkChannel channel, PacketWriterDelegate<T> writeAction)
     {
-        if (udpClient == null || serverEndPoint == null || !isConnected)
+        if (transport == null || serverEndPoint == null || !isConnected)
         {
             SrLogger.LogWarning("Cannot send packet: Not connected to a Server!");
             return;
@@ -348,7 +368,7 @@ public sealed class SR2MPClient
     private void SendRaw(ArraySegment<byte> data, IPEndPoint endPoint)
     {
         if (data.Array != null)
-            udpClient?.Client.SendTo(data.Array, data.Offset, data.Count, SocketFlags.None, endPoint);
+            transport?.Send(data, endPoint);
     }
 
     // Handle acknowledgement from server, used in client packet manager
@@ -358,6 +378,12 @@ public sealed class SR2MPClient
     internal bool ShouldProcessOrderedPacket(IPEndPoint sender, ushort sequenceNumber, byte packetType, NetworkChannel channel, PacketReliability reliability,
         Action? processAction = null)
             => reliabilityManager?.ShouldProcessOrderedPacket(sender, sequenceNumber, packetType, channel, reliability, processAction) ?? true;
+
+    private void DisconnectSession(long generation)
+    {
+        if(MainThreadDispatcher.IsMainThread) {if(generation==SessionEpoch) Disconnect();}
+        else MainThreadDispatcher.Instance?.Enqueue(()=>{if(generation==SessionEpoch) Disconnect();});
+    }
 
     internal void Disconnect()
     {
@@ -397,6 +423,7 @@ public sealed class SR2MPClient
             PacketDeduplication.Clear();
 
             isConnected = false;
+            Interlocked.Increment(ref epoch);
             isConnecting = false;
             connectionAcknowledged = false;
 
@@ -405,10 +432,10 @@ public sealed class SR2MPClient
 
             reliabilityManager?.Stop();
 
-            udpClient?.Close();
-            udpClient = null;
+            transport?.Close();
+            transport = null;
 
-            if (receiveThread is { IsAlive: true })
+            if (receiveThread is { IsAlive: true } && receiveThread != System.Threading.Thread.CurrentThread && !receiveThread.Join(250))
                 SrLogger.LogWarning("Receive thread did not stop gracefully");
 
             receiveThread = null;

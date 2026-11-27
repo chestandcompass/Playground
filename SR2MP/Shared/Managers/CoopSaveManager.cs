@@ -88,6 +88,7 @@ internal static class CoopSaveManager
         HostGadgetPlacement.Reset();
         PlayerCosmetics.Reset();
         SessionGuard.Reset();
+        OnlineSession.Reset();
         GuestWorld = null;
         guestWasBound = false;
         restorePending = false;
@@ -108,6 +109,7 @@ internal static class CoopSaveManager
         HostGadgetPlacement.Reset();
         PlayerCosmetics.Reset();
         SessionGuard.Reset();
+        OnlineSession.Reset();
         Role = "singleplayer";
         GuestWorld = null;
         guestWasBound = false;

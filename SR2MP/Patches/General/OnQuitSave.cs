@@ -14,8 +14,7 @@ internal static class OnQuitSave
     }
     public static void Postfix()
     {
-        if (Main.Server.IsRunning)
-            Main.Server.Close();
+        Main.Server.Close();
         if (Main.Client.IsConnected)
             Main.Client.Disconnect();
     }

@@ -1,8 +1,11 @@
-param([string]$GameDirectory = (Join-Path $PSScriptRoot 'runtime'))
+param(
+    [string]$GameDirectory = (Join-Path $PSScriptRoot 'runtime'),
+    [string]$ReleaseFile = (Join-Path $PSScriptRoot 'release.json')
+)
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
 try {
-    $release = Get-Content release.json -Raw | ConvertFrom-Json
+    $release = Get-Content -LiteralPath $ReleaseFile -Raw | ConvertFrom-Json
     if ($release.version -notmatch '^\d+\.\d+\.\d+$' -or $release.build -lt 1 -or $release.tag -notmatch '^v[0-9A-Za-z.-]+$') { throw 'Invalid release.json.' }
     $info = Get-Content SR2MP\BuildInfoConstants.cs -Raw
     $info = $info -replace 'const string MelonVersion = "[^"]+"', ('const string MelonVersion = "'+$release.version+'"')

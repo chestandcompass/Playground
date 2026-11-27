@@ -1,0 +1,9 @@
+{
+  "name":"playground-relay",
+  "main":"src/online-worker.js",
+  "compatibility_date":"2026-11-27",
+  "workers_dev":true,
+  "observability":{"enabled":false},
+  "durable_objects":{"bindings":[{"name":"ROOMS","class_name":"OnlineRoom"},{"name":"GATE","class_name":"LobbyGate"}]},
+  "migrations":[{"tag":"v1","new_sqlite_classes":["OnlineRoom","LobbyGate"]}]
+}

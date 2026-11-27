@@ -51,7 +51,7 @@ internal sealed class ServerPacketManager
         SrLogger.LogMessage($"Total handlers registered: {Handlers.Count}");
     }
 
-    public void HandlePacket(byte[] data, int receivedBytes, IPEndPoint clientEp)
+    public void HandlePacket(byte[] data, int receivedBytes, IPEndPoint clientEp,long generation)
     {
         if (receivedBytes < HeaderSize)
         {
@@ -163,7 +163,7 @@ internal sealed class ServerPacketManager
         {
             if (Handlers.TryGetValue(packetTypeHeader, out var handler))
             {
-                MainThreadDispatcher.Instance.Enqueue(new ServerHandleCache(reader, handler, clientEp));
+                MainThreadDispatcher.Instance.Enqueue(new ServerHandleCache(reader, handler, clientEp,generation));
             }
             else
             {

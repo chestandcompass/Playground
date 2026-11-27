@@ -4,21 +4,26 @@ using System.Net.Sockets;
 using SR2MP.Packets.Utils;
 using SR2MP.Server.Models;
 using SR2MP.Shared.Managers;
+using SR2MP.Shared.Transport;
 
 namespace SR2MP.Server.Managers;
 
 internal sealed class NetworkManager
 {
-    private UdpClient? udpClient;
+    private IDatagramTransport? transport;
     private volatile bool isRunning;
-    private Thread? receiveThread;
+    private System.Threading.Thread? receiveThread;
     private ReliabilityManager? reliabilityManager;
+    private long epoch;
+    internal long SessionEpoch => Interlocked.Read(ref epoch);
+    internal bool OwnsTransport(IDatagramTransport value) => ReferenceEquals(transport,value);
 
-    public event Action<byte[], int, IPEndPoint>? OnDataReceived;
+    public event Action<byte[], int, IPEndPoint, long>? OnDataReceived;
+    internal event Action<IDatagramTransport>? OnTransportFailed;
 
     public bool IsRunning => isRunning;
 
-    public void Start(int port, bool enableIPv6 = true)
+    public void Start(int port, bool enableIPv6 = true, IDatagramTransport? prepared = null)
     {
         if (isRunning)
         {
@@ -28,29 +33,31 @@ internal sealed class NetworkManager
 
         try
         {
-            if (enableIPv6)
-            {
-                udpClient = new UdpClient(AddressFamily.InterNetworkV6);
-                udpClient.Client.DualMode = true;
-                udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
-                SrLogger.LogMessage($"Server started in dual mode (IPv6 + IPv4) on port: {port}");
-            }
+            if (prepared != null) transport = prepared;
             else
             {
-                udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, port));
-                SrLogger.LogMessage($"Server started in IPv4 mode on port: {port}");
+                UdpClient udp;
+                if (enableIPv6)
+                {
+                    udp = new UdpClient(AddressFamily.InterNetworkV6);
+                    udp.Client.DualMode = true;
+                    udp.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
+                }
+                else udp = new UdpClient(new IPEndPoint(IPAddress.Any, port));
+                transport = new UdpDatagramTransport(udp);
             }
 
-            udpClient.Client.ReceiveBufferSize = 512 * 1024;
-            udpClient.Client.SendBufferSize = 512 * 1024;
-            udpClient.Client.ReceiveTimeout = 0;
-
-            reliabilityManager = new ReliabilityManager(SendRaw);
+            var session = transport!;
+            var generation = Interlocked.Increment(ref epoch);
+            reliabilityManager = new ReliabilityManager((data, endpoint) =>
+            {
+                if (generation == SessionEpoch && data.Array != null) session.Send(data, endpoint);
+            });
             reliabilityManager.Start();
 
             isRunning = true;
 
-            receiveThread = new Thread(new Action(ReceiveLoop))
+            receiveThread = new System.Threading.Thread(()=>ReceiveLoop(session,generation))
             {
                 IsBackground = true
             };
@@ -58,14 +65,15 @@ internal sealed class NetworkManager
         }
         catch (Exception ex)
         {
+            transport?.Dispose(); transport = null;
             SrLogger.LogError($"Failed to start Server: {ex}");
             throw;
         }
     }
 
-    private void ReceiveLoop()
+    private void ReceiveLoop(IDatagramTransport session,long generation)
     {
-        if (udpClient == null)
+        if (session == null)
         {
             SrLogger.LogError("Server is null in ReceiveLoop!");
             return;
@@ -73,34 +81,45 @@ internal sealed class NetworkManager
 
         SrLogger.LogMessage("Server ReceiveLoop started!");
 
-        EndPoint remoteEp = SR2MP.Shared.Utils.NetworkEndpoints.ReceiveEndpoint(udpClient.Client.AddressFamily);
+        EndPoint remoteEp = SR2MP.Shared.Utils.NetworkEndpoints.ReceiveEndpoint(session.AddressFamily);
         var receiveBuffer = ArrayPool<byte>.Shared.Rent(2048);
 
         try
         {
-            while (isRunning)
+            while (isRunning && ReferenceEquals(transport, session))
             {
                 try
                 {
-                    var receivedBytes = udpClient.Client.ReceiveFrom(receiveBuffer, ref remoteEp);
+                    var receivedBytes = session.Receive(receiveBuffer, ref remoteEp);
+                    if (generation != SessionEpoch) break;
 
                     if (receivedBytes > 0)
-                        OnDataReceived?.Invoke(receiveBuffer, receivedBytes, (IPEndPoint)remoteEp);
+                        OnDataReceived?.Invoke(receiveBuffer, receivedBytes, (IPEndPoint)remoteEp,generation);
                 }
                 catch (SocketException ex)
                 {
-                    if (!isRunning) break;
+                    if (!isRunning || !ReferenceEquals(transport, session)) break;
                     if (ex.SocketErrorCode == SocketError.ConnectionReset) continue;
                     SrLogger.LogError($"Server receive socket stopped: {ex.Message}");
                     Stop();
+                    OnTransportFailed?.Invoke(session);
+                    break;
+                }
+                catch (IOException) when (session is RelayDatagramTransport)
+                {
+                    if (!isRunning || !ReferenceEquals(transport, session)) break;
+                    SrLogger.LogMessage("Playground relay connection ended.");
+                    Stop();
+                    OnTransportFailed?.Invoke(session);
                     break;
                 }
                 catch (Exception ex)
                 {
-                    if (isRunning)
+                    if (isRunning && ReferenceEquals(transport, session))
                     {
                         SrLogger.LogError($"ReceiveLoop error: {ex}");
                         Stop();
+                        OnTransportFailed?.Invoke(session);
                     }
                     break;
                 }
@@ -116,7 +135,7 @@ internal sealed class NetworkManager
     public void Send(ReadOnlySpan<byte> data, IPEndPoint endPoint, PacketReliability? reliability = null,
         NetworkChannel channel = NetworkChannel.Default)
     {
-        if (udpClient == null || !isRunning)
+        if (transport == null || !isRunning)
         {
             SrLogger.LogWarning("Cannot send: Server not running!");
             return;
@@ -150,7 +169,7 @@ internal sealed class NetworkManager
     public void Broadcast(ReadOnlySpan<byte> data, ICollection<ClientInfo> endPoints,
         PacketReliability? reliability = null, NetworkChannel channel = NetworkChannel.Important)
     {
-        if (udpClient == null || !isRunning)
+        if (transport == null || !isRunning)
         {
             SrLogger.LogWarning("Cannot broadcast: Server not running!");
             return;
@@ -171,7 +190,7 @@ internal sealed class NetworkManager
     private void SendRaw(ArraySegment<byte> data, IPEndPoint endPoint)
     {
         if (data.Array != null)
-            udpClient?.Client.SendTo(data.Array, data.Offset, data.Count, SocketFlags.None, endPoint);
+            transport?.Send(data, endPoint);
     }
 
     public void HandleAck(IPEndPoint sender, ushort packetId, byte packetType)
@@ -187,13 +206,14 @@ internal sealed class NetworkManager
             return;
 
         isRunning = false;
+        Interlocked.Increment(ref epoch);
 
         try
         {
             reliabilityManager?.Stop();
-            udpClient?.Close();
+            transport?.Close();
 
-            if (receiveThread is { IsAlive: true })
+            if (receiveThread is { IsAlive: true } && receiveThread != System.Threading.Thread.CurrentThread && !receiveThread.Join(250))
             {
                 SrLogger.LogWarning("Receive thread did not stop gracefully");
             }

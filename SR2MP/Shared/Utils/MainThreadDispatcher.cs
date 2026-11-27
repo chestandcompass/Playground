@@ -53,7 +53,7 @@ internal sealed class MainThreadDispatcher : MonoBehaviour
         {
             try
             {
-                if (Main.Client.IsConnected) clientCache.Handler.Handle(clientCache.Reader);
+                if (Main.Client.IsConnected && Main.Client.SessionEpoch == clientCache.Session) clientCache.Handler.Handle(clientCache.Reader);
             }
             catch (Exception ex)
             {
@@ -71,7 +71,8 @@ internal sealed class MainThreadDispatcher : MonoBehaviour
         {
             try
             {
-                serverCache.Handler.Handle(serverCache.Reader, serverCache.ClientEp);
+                if (Main.Server.IsRunning && Main.Server.SessionEpoch == serverCache.Session)
+                    serverCache.Handler.Handle(serverCache.Reader, serverCache.ClientEp);
             }
             catch (Exception ex)
             {
