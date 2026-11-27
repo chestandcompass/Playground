@@ -16,7 +16,7 @@ Install **the same Playground version on both computers**.
 
 ## Play with a friend
 
-1. The host chooses **Play with a friend**, then creates or opens a multiplayer world.
+1. The host chooses **Playground**, then creates or opens a multiplayer world.
 2. The other player chooses **Join a friend → Find games on LAN**.
 3. Select the host's world, enter your name, choose your hair color, and continue.
 

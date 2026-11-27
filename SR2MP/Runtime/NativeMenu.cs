@@ -135,7 +135,7 @@ internal static class NativeMenu
             if (MenuSmokeTest.Enabled) SrLogger.LogMessage($"Native menu item: {model.Definition.name} / {model.Label.TableEntryReference.Key}");
         }
         if (originals.Count == 0) return;
-        var entry = Item("Play with a friend", ShowHome);
+        var entry = Item("Playground", ShowHome);
         menu._models.Insert(Math.Min(1, menu._models.Count), entry);
         SrLogger.LogMessage("Playground: installed native main-menu entry.");
         var notice = SessionGuard.TakeNotice();

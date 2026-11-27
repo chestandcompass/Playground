@@ -2,6 +2,10 @@
 
 All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows x64. Full host-and-guest validation on two computers remains pending.
 
+## Preview 21
+
+- Rename the main-menu entry to Playground in every language.
+
 ## Preview 20
 
 - Manage worlds in the game's Save Files screen, with separate Singleplayer and Multiplayer tabs and six slots each.
