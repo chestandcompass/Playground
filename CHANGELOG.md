@@ -7,6 +7,7 @@ All releases are experimental LAN previews for Slime Rancher 2 1.3.0 on Windows 
 - Manage worlds in the game's Save Files screen, with separate Singleplayer and Multiplayer tabs and six slots each.
 - Rename worlds without changing their save identity or guest progress.
 - Copy worlds in either direction, choose the destination slot, and confirm overwrites. Keep the source and a backup of the destination.
+- Keep the multiplayer status label hidden during ordinary singleplayer games.
 
 ## Preview 19
 

@@ -34,7 +34,7 @@ If a world does not appear, check that both players have the same mod version, t
 
 Your confirmed name and hair color are remembered for next time. **Continue** saves your selection; **Back** cancels it.
 
-The on-screen status shows whether you are connecting, connected, playing singleplayer, or hosting while waiting for friends. If the connection ends, the guest returns to the menu and can rejoin.
+The on-screen multiplayer status shows whether you are connecting, connected, or hosting while waiting for friends. If the connection ends, the guest returns to the menu and can rejoin. Ordinary singleplayer games do not show this status label.
 
 ## Your worlds and progress
 

@@ -25,7 +25,7 @@ internal static class SessionGuard
 
     internal static void Update()
     {
-        if (!GameHelpers.inGame)
+        if (!GameHelpers.inGame || (CoopSaveManager.Role == "singleplayer" && !MenuSmokeTest.Enabled))
         {
             if (display != null) Object.Destroy(display);
             display = null; label = null;
